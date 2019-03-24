@@ -1,0 +1,69 @@
+CodingHints.txt, Phase 3 Mutex IPC, CpE/CSc 159
+
+1. IMPORTANT: try out the demo files 1st: without and with mutex
+
+2. New constants:
+   MUX_CREATE_CALL 51
+   MUX_OP_CALL 52
+   MUX_SIZE 20
+   STR_SIZE 101
+   LOCK 1
+   UNLOCK 2
+   STDOUT 1
+
+3. New types:
+   a new SUSPEND state  // when a proc is suspended by mutex
+   a new mux_t that has
+      int flag          // max # of processes to enter
+      int creater       // requester/owning PID
+      q_t suspend_q     // suspended PID's
+
+4. New kernel data:
+   mux_t mux[MUX_SIZE]; // kernel has these mutexes to spare
+   q_t mux_q;           // mutex ID's are initially queued here
+   int vid_mux;         // for video access control
+    
+5. During the bootstrap:
+   reset mux_q and put all mutex ID's into mux_q
+   add to the interrupt table addresses of two new entries
+
+6. Code those new entries:
+   MuxCreateEntry
+   MuxOpEntry
+
+7. sys-call.c has 3 new functions:
+   int MuxCreateCall(int flag)
+      structurally, it's coded in the same way as phase 2
+   void MuxOpCall(int mux_id, int opcode)
+      structurally, it's coded in the same way as phase 2
+   void WriteCall(int device, char *str) { // composed differently
+      get my PID by a service call
+      to set row number
+      column is set zero
+      if device is STDOUT {
+         while what str points to is not a null character {
+            Use an existing service call to show this character, at row and column
+            increment the str pointer and the column position
+         }
+      }
+   }
+
+8. proc.c:
+   InitProc():
+      Request/alloc vid_mux using the new service MuxCreateCall().
+   UserProc():
+      Experiment with MuxOpCall() calls to lock and unlock vid_mux
+      in the while(1) loop.
+   
+9. Kernel() has 2 new cases to call 2 new SR's:
+   they are called in the way as in phase 2.
+
+10. The 2 new SR's:
+     int MuxCreateSR(int flag) {
+        details described in 3.html
+     }
+
+     void MuxOpSR(int mux_id, int opcode) {
+        details described in 3.html
+     }
+

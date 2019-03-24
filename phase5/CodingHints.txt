@@ -1,0 +1,44 @@
+CodingHints.txt, Phase 5, DD 2: Interrupt-Driven Input
+
+1. Run the demo with 2 terminals: a terminal prompts for input
+   enter an input string, it will echo back to the terminal and
+   be shown on the Target PC.
+
+2. User the proc.c in the given-code directory. It has a smiple loop
+   in UserProc to prompt to terminal for input, get input, show what's
+   input on Target PC. Also, InitTerm clean up new components (see below)
+   and set in_mux flag to begin with value 0.
+
+3. New to the terminal type:
+   q_t in_q;     // to buffer terminal KB input
+   q_t echo_q;   // to echo back to terminal
+   int in_mux;   // to flow-control in_q
+
+4. A new sys-call:
+   void ReadCall(int device, char *str) {
+      determine which term_no (similar to how WriteCall did in the previous phase)
+      number of chars gathered so far = 0
+      loop forever {
+         A. lock the in_mux of the terminal
+         B. dequeue a char from out_q of the terminal
+         C. set where the str points to to char
+         D. if char is NUL -> return
+         E. advance both str pointer and char count
+         F. if char count is at the last available space of the given string:
+            a. set where str points to to NUL
+            b. return
+      }
+   }
+
+5. A new SR:
+   void TermRxSR(int term_no) {
+      read a char from the terminal io_base+DATA
+
+      enqueue char to the terminal echo_q
+      if char is CR -> also enqueue NL to the terminal echo_q
+
+      if char is CR -> enqueue NUL to the terminal in_q
+      else -> enqueue char to the terminal in_q
+
+      unlock the terminal in_mux
+   }

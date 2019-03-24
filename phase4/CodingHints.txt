@@ -1,0 +1,86 @@
+CodingHints.txt, Phase 4 Intr-Driven Output, CpE/CSc 159
+
+1. Run demo with two terminals connected to the target PC, press 'n' keys to
+   create several processes. Observe what they do on the terminals.
+   (A process of odd PID # uses 1st terminal while even 2nd terminal.)
+   
+2. In "include.h," un-comment the line that has 'rs232.h.'
+
+3. Use the new given code proc.c.
+
+4. New constants:
+   TERM_SIZE 2         // p4, 2 terminals
+   TERM0_INTR 35       // 1st terminal intr ID
+   TERM1_INTR 36       // 2nd terminal intr ID
+   TERM0_IO_BASE 0x2f8 // I/O base of 1st term
+   TERM1_IO_BASE 0x3e8 // I/O base of 2nd term
+   TERM0_DONE 0x63 // to send to PIC when 1st term served
+   TERM1_DONE 0x64 // to send to PIC when 1st term served
+   TXRDY 2             // terminal has a Transmit Ready event
+   RXRDY 4             // terminal has a Receive Ready event
+   MASK 0xffffffe6     // new mask 1111_1111_1111_1111_1111_1111_1110_0110
+   TRUE 1
+   FALSE 0
+
+5. Each terminal has an interface, the type is:
+   typedef struct {
+      int tx_missed,   // when initialized or after output last char
+          io_base,     // terminal port I/O base #
+          out_mux;     // flow-control mux
+      q_t out_q;       // characters to send to terminal buffered here
+   } term_t;
+
+6. In main.c, use term_t to declare a terminaal array:
+   term_t term[TERM_SIZE] = {
+      { TRUE, TERM0_IO_BASE },
+      { TRUE, TERM1_IO_BASE }
+   }; 
+
+7. Apply the new MASK to be given to PIC_MASK, and code the
+   two new entries and put their addresses into interrupt table:
+      Term0Entry and Term1Entry
+
+8. Kernel has two new SR cases but they both call TermSR(?) except
+   with a different terminal array index, and before the 'break;'
+   send PIC the done value (in the terminal type) inside the case.
+
+9. Re-visit WriteCall():
+   ... (above, if device is STDOUT) ...
+   } else {                                 // device is a terminal
+      set 'int term_no' to 0 or 1 depending on the given argument
+      'device' whether it is TERM0_INTR or TERM1_INTR
+
+      while what str points to is not a null character {
+         lock the output mutex of the terminal interface data structure
+         enqueue the character of the string to the output queue of the
+         terminal interface data structure
+
+         if the device is TERM0_INTR, issue asm("int $35");
+         otherwise, issue: asm("int $36");
+
+         advance pointer 'str'
+      }
+   }
+
+10. Coding in k-sr.c:
+   void TermSR(int term_no) {
+      read the type of event from IIR of the terminal port
+      (IIR is Interrupt Indicator Register)
+
+      if it's TXRDY, call TermTxSR(term_no)
+      else if it's RXRDY, call TermRxSR(term_no) which does nothing but 'return;'
+
+      if the tx_missed flag is TRUE, also call TermTxSR(term_no)
+   }
+
+   void TermTxSR(int term_no) {
+      if the out_q in terminal interface data structure is empty:
+         1. set the tx_missed flag to TRUE
+         2. return
+      (otherwise)
+         1. get 1st char from out_q
+         2. use outportb() to send it to the DATA register of the terminal port
+         3. set the tx_missed flag to FALSE
+         4. unlock the out_mux of the terminal interface data structure
+   }
+

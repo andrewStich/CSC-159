@@ -1,0 +1,138 @@
+<html><head><title>CpE/CSc 159 Phase 3 Mutex IPC</title></head>
+<body>
+<small><i>
+Sacramento State<br>
+Computer Engineering/Computer Science<br>
+CpE/CSc 159 Operating System Pragmatics (Spring 2019)<br>
+Instructor: W. Chang
+</i></small>
+
+<p>
+<center><big><b>Phase 3 &nbsp Mutex Interprocess Communication</b></big>
+<br>
+<i>In Memoriam of <a href=https://en.wikipedia.org/wiki/Edsger_W._Dijkstra>Edsger
+Wybe Dijkstra</a> (1930-2002)</i>
+</center>
+
+<p>
+
+<big><b>Goals</big></b>
+<p>
+<blockquote>
+In this OS phase we will extend our OS services to interprocess communication
+(IPC). A common IPC method is the <i>mutex</i>. It provides processes a method
+to avoid "racing/conflicting" conditions in order to synchronize in a collective
+operation.
+<p>
+This service will be tested by processes gaining usage of the video
+display mutual-exclusively, in order not to clobber the display.
+Each process will first call a OS service to lock a video mutex before
+continuing to write to the video display. If failing to lock it, the
+process will be suspended in a suspension queue in the mutex. A process
+not suspended would normally issue another OS service to unlock the mutex
+so another process can lock the mutex.
+<p>
+The part of the process code (between the lock and unlock calls) is a
+guarded critical code section, and data accessed in the section are
+critical data.
+<p>
+A mutex is first allocated by a process via a OS service. An initial
+value for the mutex flag is given. This number sets the maximum allowable
+processes that can enter its critical section. Processes complying to the
+use of this IPC are designed by programmers. It is not the duty of the OS
+to enforce the use of an IPC.
+</blockquote>
+<p>
+
+<big><b>Mutex Service Routines</big></b>
+<p>
+
+<ol>
+<li>
+There are two service calls: <i>MuxCreateCall</i> and <i>MuxOpCall</i>. The former
+requests/initializes for a mutex. The latter either lock or unlock a mutex.
+The MuxCreateCall has both input and output elements in its C inline assembly.
+This requires combining the asm() syntax from GetPidCall and SleepCall.
+<p>
+<li>The <tt>int MuxCreateCall(int flag)</tt> leads to <tt>int MuxCreateSR(int)</tt>
+which allocates a mutex from the OS mutex queue, empty the mutex and set the flag and
+creater, and return the mutex ID via a register of the trapframe (similar to how
+GetPidSR() does).
+<p>
+<li>The call <tt>void MuxOpCall(int mux_id, int opcode)</tt> leads to <tt>void
+MuxOpSR(int mux_id, int opcode)</tt>. If the given <i>opcode</i> is <i>LOCK</i>,
+the SR:
+<ol type=I>
+<li>decrement the flag in the mutex by 1 if it is greater than 0, otherwise,
+<li>suspend the calling process by:
+<ol type=A>
+<li>queue the PID of the calling process to a suspension queue in the mutex,
+<li>alter the process state to <tt>SUSPEND</tt>, and,
+<li>reset the current running PID to NONE.
+</ol>
+</ol>
+The other opcode to the MuxOpCall() is <i>UNLOCK</i>, and the SR:
+<ol type=I>
+<li>if no suspended process in the suspension queue of the mutex, just increment
+the flag of the mutex by 1;
+<li>otherwise, release the 1st PID in the suspension queue:
+<ol type=A>
+<li>move it to the ready-to-run PID queue, and
+<li>update its state.
+</ol>
+</ol>
+</ol>
+<p>
+
+<big><b>New OS Resources</big></b>
+<p>
+
+<ol>
+<li>
+An array of mutex <tt>mux_t mux[MUX_SIZE]</tt> (the array indices are also
+mutex ID's), to be dispatched for processes.
+Each mutex has <i>int flag</i> (aforementioned) and <i>int creater</i>
+(the PID of the process that requested to create it), as well as a
+<i>q_t suspend_q</i> to queue suspended PID's. 
+<p>
+<li>
+All the available mutex ID's will be initially queued into a <i>q_t mux_q</i>.
+<p>
+<li>
+To guard the video access a <tt>int vid_mux</tt> is needed. It which will be
+created as InitProc() issues a MuxCreateCall() at the beginning of its code.
+The value 1 will be the initial flag value.
+</ol>
+
+<big><b>Deliverables</big></b>
+<p>
+
+<ol>
+Source code only, dropped to the correct dropbox folder on the host Voyager
+as before. Misplaced files will incur penalties.
+</ol>
+<p>
+
+<big><b>Questions to Review</big></b>
+<p>
+
+<ol>
+<li>
+Enter shell command on an ECS Linux host: ipcs -l for the information
+about the IPC service parametrics from the OS. Where are the "config"
+files the OS administrator can set them? (Answers: /etc/sysctl.conf and
+/proc/sys/kernel/sem.)
+<p>
+<li>
+What if a video-using process does not call MuxOpCall() to unlock? What kind
+of event will this become? Can/should an OS detect and resolve this condition?
+<p>
+<li>
+What will be valid purposes of setting the inital <i>flag</i> of a mutex to
+be different values besides 1? Such as 3, 0, or even -1?
+<p>
+<li>
+What are process <i>starvation</i>, <i>deadlock</i>, and <i>livelock</i>?
+Can you give possible coding examples that may cause them?
+</ol>
+

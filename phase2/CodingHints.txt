@@ -1,0 +1,72 @@
+CodingHints.txt, Phase 2 Process Service Calls, CpE/CSc 159
+
+1. Constants to add, (in intr_table, starting 48 is for kernel services):
+   GETPID_CALL 48
+   SHOWCHAR_CALL 49
+   SLEEP_CALL 50
+
+2. Add new things in kernel types:
+   state_t: SLEEP
+   pcb_t: int wake_centi_sec
+   update trapframe_t to become having:
+         unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax,
+                      entry_id,
+                      eip, cs, efl;
+
+3. New kernel data (declared in main.c, prototype in data.h):
+      int sys_centi_sec;        // system time in centi-sec, initialize it 0
+      q_t sleep_q               // sleeping proc PID's queued in here
+
+4. During the bootstrap, initialize kernel data and control:
+   init the new kernel data sleep_q (empty) and sys_centi_sec (0)
+   add to intr_table new entries:
+      place GetPidEntry in entry GETPID_CALL
+      place ShowCharEntry in entry SHOWCHAR_CALL
+      place SleepEntry in entry SLEEP_CALL
+   
+5. Check in pseudo-code:
+   k-entry.S,
+      Loader needs to adjust stack pointer
+      TimerEntry pushes entry_id $TIMER_INTR and jump to routine PerKernel
+      which is the rest of the original TimerEntry code
+      3 new entries do the same (but pushes their own entry_id constant instead)
+   proc.c,
+      use this new proc.c that calls for kernel services
+   sys-call.c,
+      complete code by examples given in it, and create prototype sys-call.h
+
+6. in void Kernel(...),
+   use a "switch(trapframe_p->entry_id)" to call the respective SR, each SR
+   must match functions in sys-call.c having arguments and receive return:
+   e.g., case SLEEP_CALL:
+            SleepSR(trapframe_p->eax); // Why eax? To match the code in sys-call.c.
+            ...
+   or, case GETPID_CALL:
+          trapframe_p->eax = GetPidSR(); // Why eax? To the code in sys-call.c.
+          ...
+      
+7. New code in k-sr.c/.h (matching how each is called from Kernel()):
+   e.g., int GetPidSR(void) { ...
+   
+8. How to code: void SleepSR(int centi_sec):
+      set wake_centi_sec in PCB of the running process to sys_centi_sec + centi_sec
+      alter run_pid proc state to ?
+      enqueue it to ? queue
+      reset run_pid to ?
+
+9. How to update code: void TimerSR(void):
+      notify PIC 1st (as before)
+      upcount sys_centi_sec
+      call a new subroutine: void CheckWakeProc(void)
+      if run_pid is 0, just return here
+      (the rest of the code is unchanged)
+      
+10. New subroutine to add to k-sr.c (preferrably before TimerSR):
+   void CheckWakeProc(void) {
+      see how many proc are there in sleep_q
+      loop for that many times:
+         1. dequeue sleep_q to get a PID
+         2. using the PID to check if its wake time is up?
+            2a. yes: add PID to ready_q, alter its proc state
+            2b. no: enqueue PID back to sleep_q
+   }

@@ -1,0 +1,164 @@
+<small><i>
+Sacramento State<br>
+Computer Engineering / Computer Science<br>
+CpE/CSc 159 Operating System Pragmatics (Spring 2019)<br>
+Instructor: W. Chang
+</i></small>
+
+<p>
+<center><big><b>Phase 1 &nbsp; <i>A Multitasking OS</i></b></big></center></p>
+
+<h3>Introduction</h3>
+<ol>
+<li>
+Our OS kernel can <i>multitask</i>, driven by a timer device which
+interrupts the CPU to switch from the execution of a process code to
+the kernel code. We have programmed a timer lab in previous 0. The
+creation, scheduling, and running of small and simple processes will
+be carried out in a simple fashion in this phase.
+<li>
+The pseudo code is given in the <i><b>pseudo-code</b></i> folder to
+help you construct the OS of the 1st phase. How the timer is acknowleged
+and serviced is crucial to construct this phase correctly. A process
+<i>trapframe</i> is used to achieve the context switching between a
+process and the kernel code, as well as the creation of a process.
+<li>
+To copy the given files, issue a shell command "<b><i>cp
+~changw/html/159/1/pseudo-code/* .</i></b>" The "dot" signifies that
+the current directory is the destination. (Avoid using <i>copy-paste</i>
+from a web browser since this may incur unwanted Windows <i>ctrl-M</i>
+characters which may cause compiler errors.)
+</ol>
+<p>
+
+<h3>What's in "pseudo-code"</h3>
+<ol>
+<li>
+In <b><i>pseudo-code</i></b> directory are actual and pseudo code.
+During main() your OS bootstraps:
+<ul>
+<li>initialize the kernel data and control,
+<li>create the first process <i>InitProc</i> (it will have PID 0),
+<li>call process Scheduler to select a process to run,
+<li>run the selected process.
+</ul>
+<p>
+<li>
+When <i>InitProc</i> runs it repeatedly flashes a dot symbol at
+the upper-left corner on the display of the target PC, approximately
+once a second. The timer device triggers a timer service routine (SR)
+at a rate of 100 times a second.
+<p>
+<li>
+The timer SR counts the runtime of the process that is current running.
+If it reaches the OS time slice, the kernel would suspend it and choose
+a different process to run (if any other available).
+A pool of processes that are ready to run have their PID's queued into
+a <i>ready queue</i> (<i>ready_q</i>) to be selected to run. Our kernel
+switches processes by a <i>round-robin</i> fashion.
+<p>
+<li>
+The kernel code also checks if the target PC keyboard is pressed. If yes,
+it will be polled and served:
+   <ul>
+   <li><i><b>b</b></i>, call <i>breakpoint()</i> to go to the GDB
+   prompt to debug the code or enter 'quit' to end the run.
+   <li><i><b>n</b></i>, call SR <i>NewProcSR()</i> to create a new process.
+   </ul>
+<p>
+<li>
+The <i>TimerSR()</i> upcounts the <i>run_count</i> in the Process Control
+Block (PCB) of the process currently running. When it counts upto
+<i>TIME_SLICE</i>, the process is <i>suspended</i> with its PID appended
+to the ready queue, and state changed. The TimerSR() also notify PIC that
+the service is done.
+<p>
+<li>
+When the running process is missing (NONE) or InitProc (PID 0), the
+<i>Scheduler()</i> dequeues the 1st PID from the ready PID queue as
+the newly selected running PID. In case the ready queue is empty,
+InitProc (PID 0) will be selected.
+<p>
+<li>
+All PID's are initially queued in the PID queue (<i>pid_q</i>). The
+initial state is <i>UNUSED</i>. As a new process is created, a PID
+from this queue is retrieved. A PID is used as an array index used
+in the Process Control Block (<b>pcb</b>) and Process Stack
+(<b>proc_stack</b>). To create a new process, the NewProcSR() code
+initializes the PCB and creates a process trapframe in the process stack.
+The PID is then queued to the <i>ready_q</i>. Its state is set to READY.
+<p>
+<li>
+Each queue has a array of Q_SIZE numbers: <i>int q[Q_SIZE]</i> and a
+<i>int tail</i> which indicates both the current size of the queue
+and the location (array index) to add a new number. The <i><b>lib.c</i></b>
+facilitates a set of queuing functions and <i>Bzero()</i> to clear all
+bytes to 0 in a memory block.
+<p>
+<li>
+Each <i>Process Control Block (PCB)</i> contains:
+   <ul>
+   <li><i>state_t</i> <b>state</b>, a process state: UNUSED, READY, or RUN;
+   <li><i>int</i> <b>run_count</b>: a timer interrupt count, reset it when
+   the process is selected;
+   <li><i>int</i> <b>total_count</b>: accumulated timer counts since the
+   creation of the process;
+   <li><i>trapframe_t *</i><b>trapframe_p</b>: location of the CPU context
+   in the process stack.
+   </ul>
+<p>
+<li>
+To create a process is to create a trapframe in the process runtime stack
+by <i>NewProcSR()</i>. It is loaded as the CPU context to run.
+The context of the CPU can also be saved to a trapframe in the process
+runtime stack at an interrupt event. To resume a process the trapframe
+is loaded back to the CPU. Given a trapframe address, the <i>Loader()</i>
+can load it to run. A simple process trapframe can contain:
+   <ul>
+   <li><i>unsigned int</i> <b>reg[8]</b>, space for 8 CPU registers;
+   <li><i>unsigned int</i> <b>eip</b>, where instruction is;
+   <li><i>unsigned int</i> <b>cs</b>, where code segment is;
+   <li><i>unsigned int</i> <b>efl</b>, CPU flags.
+   </ul>
+<p>
+<li>
+Process <i>InitProc</i> is created during the OS bootstrap in <i>main()</i>.
+The instruction pointer of the CPU <i>eip</i> in the trapframe points
+to <i>InitProc()</i>. For other processes created by pressing the
+<i>'n'</i> key, their <i>eip</i> will point to <i>UserProc()</i> instead.
+<p>
+<li>
+Part of the timer interrupt service is to notify the PIC device that the
+timer service is done. Otherwise, the <i>PIC</i> will not give the CPU
+the next timer interrupt (presuming the CPU is still busy.)
+<p>
+</ol>
+
+<h3>Deliverables</h3>
+<ol>
+<li>
+You should form a team of maximum 3 persons, and mail the instructor:
+your OS team name and the member names. Similar to the convention of
+naming a variable, a team name must not use spaces or special symbols,
+and is case sensitive.
+<li>
+Submit all necessary source files only. Do not submit files generated
+by the compiler or SPEDE. Source files have endings in <b><i>.c</i></b>,
+<b><i>.h</b></i>, and <b><i>.S</b></i>.
+<li>
+Penalty will be applied if not following the instructions. This includes
+accidental cloberring or incorrect file placement in the dropbox system.
+Please do this correctly.
+</ol>
+
+<h3>Review Questions</h3>
+<ol>
+<li>
+What is a process trapframe and how is it used?
+<li>
+Why <i>asm("sti");</i> is not seen in phase 1? (Used in the 'timer prep.')
+<li>
+How can the <i>round-robin</i> process scheduling be modified to carry
+out other scheduling types such as the <i>shortest-job-first</i> policy?
+</ol>
+

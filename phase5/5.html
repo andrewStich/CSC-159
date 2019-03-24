@@ -1,0 +1,100 @@
+<small><i>
+Sacramento State<br>
+Computer Engineering/Computer Science<br>
+CpE/CSc 159 Operating System Pragmatics (Spring 2019)<br>
+</i></small>
+
+<p>
+<center><big><b>Phase 5 &nbsp;
+<i>DD 2:</i> Interrupt-Driven Input</b></big><br>
+</center>
+<p>
+
+<h3>Goal</h3>
+<blockquote>
+The goal of this phase is to learn how an input device driver is constructed
+to read from multiple terminals. Input events are asynchronous from terminal
+keyboards. The demo runtime with the <i>n</i> key pressed twice on the target
+PC window will create two <i>UserProc</i> processes which in term will prompt
+to terminals and gather inputs from them, and show them onto the target PC.
+To prompt is the output capability achieved from the previous OS phase. The
+input, however, is the focus of this phase.
+</blockquote>
+<p>
+
+<h3>The Upper Half -- <i>ReadCall</i></h3>
+<ol>
+<li>
+A new <b><i>ReadCall()</b></i> is needed to gather input from a
+terminal keyboard. The usage is similar to WriteCall() where the
+device and string buffer are given. The return condition in the
+call is either a NUL character is read (end of input string),
+or the number of input characters is exceeding what STR_SIZE can
+accommodate.
+<p>
+<li>
+Similar to the output requirement, the <i>terminal interface</i> data
+structure will need an input queue to buffer the input characters, and
+a mutex associated with the queue. Plus, an echo-back queue to echo the
+input back to the terminal.
+<p>
+<li>
+The usage of the above new components: the upper half of the device
+driver first locks the input mutex before dequeues the out queue for
+one input character (copy it to the input string of the calling process),
+until either a NUL character is read (also copied), or the input is
+exceeding the string capacity. (The end-of-string delimiter -- NUL
+character, is still to be added as the last character in the string.)
+During the ReadCall(), the process is said to be <i>blocked</i>.
+</ol>
+
+<h3>The Lower Half -- <i>TermRxSR</i></h3>
+<ol>
+<li>
+Once a key is pressed at a terminal, it will arrive at the terminal port
+of the target PC. This will cause an interrupt signal (TERMx_INTR), and
+the lower half of the device driver will subsequently get to handle it.
+<p>
+<li>
+The lower half of the device driver is <i>void TermRxSR(int term_no)</i>,
+triggered by the event <i>RXRDY</i> read from the <i>IIR</i> of a serial port,
+will read in the key-ed character from the port I/O base (+ DATA), and append
+it to both of the terminal <i>in_q</i> and <i>echo_q</i> buffers. If the character
+read is a <i>Carriage Return (CR)</i> ('\r'), the in_q should get a <i>NUL</i> ('\0')
+instead. As to the echo_q, it should still get the CR, but append a <i>New Line
+(NL)</i> character ('\n') to the echo_q.
+</ol>
+
+<h3>Deliverables</h3>
+<ol>
+<li>
+As before, submit only source-code files (*.c, *.h, and k-entry.S) to your team
+dropbox on host Voyager, in the designated phase folder.
+<p>
+<li>
+All other rules declared from previous phases regarding not to mess up
+submission directories and not to conduct plagiarism also apply.
+</ol>
+<p>
+
+<h3>Review Questions</h3>
+<ol>
+<li>
+The input function described is a <i>full-duplex</i> communication mode. What
+is the advantage of this and what about at the time of a password entry?
+<p>
+<li>
+What are ways to design a device driver? Using a wait, poll, or interrupt-driven
+approach? Or, a hybrid of modes?
+<p>
+<li>
+What are the pros and cons of the different approaches mentioned above?
+<p>
+<li>
+What are the pros and cons of implementing both halves of a device driver as
+SR's? As a process? Or, a mixture of the two?
+<p>
+<li>
+What is a <i>bus</i>? How can a bus device driver be implemented?
+</ol>
+

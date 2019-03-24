@@ -1,0 +1,149 @@
+<small><i>
+Sacramento State<br>
+Computer Engineering/Computer Science<br>
+CpE/CSc 159 Operating System Pragmatics (Spring 2019)<br>
+</i></small>
+
+<p>
+<center><big><b>Phase 4 &nbsp;
+<i>DD 1:</i> Wait/Poll/Interrupt-Driven Output</b></big><br>
+</center>
+<p>
+
+<h3>Goal</h3>
+<blockquote>
+The goal of this phase is to learn the basics of device drivers,
+in order to extend our OS services to peripheral devices such as
+text terminals for tests.
+</blockquote>
+
+<h3>Device Driver Software</h3>
+<ol>
+<li>
+Almost every peripheral device is coupled with a software to be
+included as part of the OS services. This can be done by:
+<ol type=a>
+<li> busy-wait: use a delay in code including sleep,
+<li> busy-poll: busy repeatedly reading the status of the device
+until it is ready again, (can time it and issue a time-out),
+<li> an interrupt-driven method via a feedback signal (so the CPU
+can perform other tasks instead), or
+<li> a hybrid from above.
+</ol>
+<p>
+<li>
+An I/O device is usually much slower than the CPU, a device driver,
+after issuing work to an I/O device, would suspend itself for the OS
+to run other processes. And when the I/O completes, the hardware will
+issue an interrupt signal (similar to a timer device interrupt) and
+the OS will then respond to it (to resume the device driver to continue).
+<p>
+<li>
+Instead of using argument <i>STDOUT</i> to call <i>WriteCall()</i>, to output
+to a terminal via a data structure interface that is associated with the
+1st terminal at the interrupt channel <i>TERM0_INTR 35 (I/O base 0x2f8)</i>
+or the 2nd terminal at <i>TERM1_INTR 36 (I/O base 0x3e8)</i>. Therefore,
+<i>WriteCall()</i> will have new devices to perform the call differently.
+<p>
+<li>
+The <i>WriteCall()</i> is the <i>upper half</i> of the device driver which
+issues an I/O service, which will send the user string, one character at
+a time to a <i>terminal output queue</i>. This operation is subjected to
+an <i>output flow-control mutex</i> in order to synchronize the data transfer.
+<p>
+<li>
+The <i>TermSR</i> is the <i>lower half</i> of the device driver, which in
+term, will send what is buffered in the terminal output queue, one character
+at a time to the data register of the I/O port, and, issue a mutex unlock
+on the terminal output mutex (and thus the upper half can be released).
+<p>
+<li>
+The terminal interface is a data structure that contains:
+<ol type=a>
+<li>a flag for the readiness of the terminal
+<li>the I/O base number of the terminal port
+<li>a flow-control mutex ID <i>out_mux</i>
+<li>an output queue to buffer the user string
+</ol>
+<p>
+<li>
+The given <i>proc.c</i> contains the routine to initialize terminals.
+InitProc() will call it twice to initialize two terminals. It also does
+as an example a <i>busy-wait</i> method to print newline characters to
+clear the terminal display.
+<p>
+<li>
+Caused by the port initialization as well as sending a character to the
+terminal port to display, the remote terminal will feedback with a signal
+to cause an interrupt TERM0_INTR or TERM1_INTR, and thus triggers (if the
+PIC mask and the system interrup table have been programmed correctly)
+the corresponding entry point in <i>k-entry.S</i>, and then the Kernel()
+where there are two new cases to call:
+<ol type=a>
+<li>TERM0_INTR: call TermSR(0), 0 is the index to the terminal array for
+the 1st terminal; and send back to the PIC the done value.
+<li>TERM1_INTR: call TermSR(1), 1 is the index to the terminal array for
+the 2nd terminal; and send back to the PIC the done value.
+</ol>
+<p>
+<li>
+Finally, the lower half of the device driver <i>TermSR()</i> executes:
+<ol type=a>
+<li>read the type of event from the <i>IIR</i> register of the terminal port,
+<li>if the event is <i>TXRDY</i>, call subroutine <i>TermTxSR()</i>,
+<li>if the event is <i>RXRDY</i>, call subroutine <i>TermRxSR()</i> (which
+does nothing but just return in this phase),
+<li>at the end, check the <i>tx_missed</i> flag in the terminal interface
+data structure, and if it is true, call the TermTxSR() again.
+</ol>
+<p>
+<li>
+About <i>TermTxSR</i>:
+<ol type=A>
+<li>if the output queue of the terminal is empty:
+<ol type=a>
+<li>set the tx_missed flag to TRUE, and
+<li>return
+</ol>
+<li>otherwise:
+<ol type=a>
+<li>get the 1st character from the output queue,
+<li>send it to the <i>DATA</i> register of the terminal,
+<li>set the tx_missed to FALSE, and
+<li>unlock the output mutex of the terminal.
+</ol>
+</ol>
+<p>
+<li>
+More details are in </i>CodingHints.txt</i>. Your OS must be able to serve
+two terminals. UserProc with odd PID's (1, 3, 5, etc.) use the 1st terminal
+(<i>TERM0_INTR</i>), and even ones use the 2nd terminal (<i>TERM1_INTR</i>).
+</ol>
+
+<h3>Deliverables</h3>
+<blockquote>
+<li>
+As before, the source code is to be submitted to your designated Voyager dropbox.
+Your result must be able to write to two terminals.
+<p>
+<li>
+Usage of code from the past will be deemed as plagiarism. Not meeting requirements
+will incur significant point deductions.
+</blockquote>
+
+<h3>Questions</h3>
+<blockquote>
+<li>
+How can an <i>busy-wait</i> WriteCall() be made? What are the pros and cons to have
+it made with this method? What about <i>busy-poll</i>?
+<p>
+<li>
+Expand from above, the concept of a "cooperative" OS (c.f. "preemptive"):
+voluntary sleep/delay calls, requesting to lower own scheduling priority?
+What is the "nice" unix command.
+<p>
+<li>
+Can a range check on an input arguments be simply handled by the code in
+sys-call.c? What would be the side effects? How does a real OS handle this?
+</blockquote>
+
