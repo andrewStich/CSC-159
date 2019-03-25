@@ -148,7 +148,20 @@ void TermSR(int term_no) {
 }
 
 void TermRxSR(int term_no) {
-   return;
+   char ch;
+
+   ch = inportb(term[term_no].io_base + DATA);
+   EnQ(ch, &term[term_no].echo_q);
+
+   if(ch == '\r') {
+      EnQ('\n', &term[term_no].echo_q);
+      EnQ('\0', &term[term_no].in_q);
+   }
+   else {
+      EnQ(ch, &term[term_no].in_q);
+   }
+
+   MuxOpSR(term[term_no].in_mux, UNLOCK);
 }
 
 void TermTxSR(int term_no) {

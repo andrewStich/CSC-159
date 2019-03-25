@@ -105,3 +105,30 @@ void WriteCall(int device, char *str) {
    }
 }
 
+void ReadCall(int device, char *str) {
+   int term_no;
+   int count = 0;
+   char ch;
+
+   if(device == TERM0_INTR) {
+      term_no = 0;
+   } else {
+      term_no = 1;
+   }
+
+   while(TRUE) {
+      MuxOpCall(term[term_no].in_mux, LOCK);
+      ch = DeQ(&term[term_no].out_q);
+      //how do we add the new char to a string??
+      *str = ch;
+      if(ch == '\0') return;
+
+      str++;
+      count++;
+      if(count == STR_SIZE) {
+         *str = '\0';
+         return;
+      }
+   }
+}
+

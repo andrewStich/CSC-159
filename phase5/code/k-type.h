@@ -36,7 +36,10 @@ typedef struct {
    int tx_missed;
    int io_base;
    int out_mux;
+   int in_mux;
    q_t out_q;
+   q_t in_q;
+   q_t echo_q;
 } term_t;
 
 #endif

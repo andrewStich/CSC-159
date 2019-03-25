@@ -12,5 +12,6 @@ void SleepCall(int);
 int MuxCreateCall(int);
 void MuxOpCall(int, int);
 void WriteCall(int, char *);
+void ReadCall(int, char);
 
 #endif
