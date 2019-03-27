@@ -85,7 +85,7 @@ void WriteCall(int device, char *str) {
 
       while(*str != '\0') {
 	 MuxOpCall(term[term_no].out_mux, LOCK); //look into the mux array at index "term[term_no].out_mux" and lock it.
-	 EnQ((int)str, &term[term_no].out_q);
+	 EnQ((int)*str, &term[term_no].out_q);
 
 	 if(device == TERM0_INTR) {  //asm("int $35");
 	     asm("int %0"
@@ -118,7 +118,7 @@ void ReadCall(int device, char *str) {
 
    while(TRUE) {
       MuxOpCall(term[term_no].in_mux, LOCK);
-      ch = DeQ(&term[term_no].out_q);
+      ch = DeQ(&term[term_no].in_q);
       //how do we add the new char to a string??
       *str = ch;
       if(ch == '\0') return;
