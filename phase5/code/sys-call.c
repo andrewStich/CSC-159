@@ -132,7 +132,7 @@ void ReadCall(int device, char *str) {
 	 :
 	 : "g" (device)
       );*/
-      if(device == TERM0_INTR) {  //asm("int $35");
+      /*if(device == TERM0_INTR) {  //asm("int $35");
           asm("int %0"
 	       :
 	       : "g" (TERM0_INTR)
@@ -143,7 +143,7 @@ void ReadCall(int device, char *str) {
 	       :
 	       : "g" (TERM1_INTR)
           );
-      }
+      }*/
       str++;
       count++;
       if(count == STR_SIZE) {
