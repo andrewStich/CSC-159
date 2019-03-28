@@ -99,6 +99,10 @@ void WriteCall(int device, char *str) {
 	       : "g" (TERM1_INTR)
 	       );
 	 }
+	 /*asm("int %0"
+	    :
+	    : "g" (device)
+	    );*/
 
       str++;
       }
@@ -123,6 +127,23 @@ void ReadCall(int device, char *str) {
       *str = ch;
       if(ch == '\0') return;
 
+      //Interrupt
+      /*asm("int %0"
+	 :
+	 : "g" (device)
+      );*/
+      if(device == TERM0_INTR) {  //asm("int $35");
+          asm("int %0"
+	       :
+	       : "g" (TERM0_INTR)
+	 );
+      }
+      else {                      //asm("int $36");
+          asm("int  %0"
+	       :
+	       : "g" (TERM1_INTR)
+          );
+      }
       str++;
       count++;
       if(count == STR_SIZE) {
