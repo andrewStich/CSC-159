@@ -1,0 +1,122 @@
+<body bgcolor=white>
+<small><i>
+Sacramento State<br>
+Computer Engineering / Computer Science<br>
+CpE/CSc 159 Operating System Pragmatics (Spring 2019)<br>
+</i></small>
+<p>
+<center>
+<big><b>Phase 6 &nbsp; Process Life Cycle</big></b>
+</center>
+
+<h3>Goal</h3>
+<ol>
+<li>
+To furnish a complete process life cycle with these kernel service calls:
+<ol type=i>
+<li><i>int ForkCall(void)</i>, which creates a child process resembling its parent;
+<li><i>int WaitCall(void)</i>, which suspends the calling parent process until a
+child process exits; and
+<li><i>void ExitCall(int)</i>, is to exit and return an exit code to the parent process.
+</ol>
+<p>
+<li>
+After the creation of a child process via a ForkCall(), the parent process will
+issue a WaitCall() which suspends the parent until a child process requests to
+exit with an ExitCall(). The child process thus runs in the <i>foreground</i>
+like a subroutine for its parent, and the parent resumes after the child exits.
+<p>
+<li>
+The <i>fork</i> service duplicates the calling process (<i>parent</i>)
+to an identical copy (<i>child</i>) that continues the execution point
+immediately after the <i>int ?</i> instruction, but will be using its
+own runtime stack for local varialbes. A child process <i>inherits</i>
+all accesses of devices and files from its parent process.
+<p>
+<li>
+"One call, two returns." A successful fork call returns the child PID
+to the parent process, and 0 to the new child process. The return value
+is often used to separate the subsequent code in the algorithm design.
+<p>
+<li>
+The <i>ForkSR</i> first allocates a new PID which leads to a new PCB and
+a runtime stack. The new PCB is first cleared and then initialized:
+<ol type=i>
+<li> process state, 
+<li> parent PID (ppid), and
+<li> trapframe location (copy from the parent but subject to an adjustment).
+</ol>
+<p>
+<li>
+The runtime stack is a duplicate of the parent's runtime stack but needs a
+few location adjustments. The location changes is from the parent's stack
+to the new child's stacks. This difference should be applied to the child's
+trapframe pointer and involved registers in the trapframe:
+<i>ESP</i>, <i>EBP</i>, <i>ESI</i>, and <i>EDI</i>; and other EBP
+values (of a caller-callee series) in the new stack (explained below).
+<p>
+<li>
+The EBP of the trapframe is the current one in use (as a callee -- ForkCall),
+and where it points to is another EBP (of the caller), and so on.
+Program code uses the runtime stack as working memory frames for callers and
+callees. Each caller-callee pair operates in its own stack frame and the
+<i>base</i> of the stack frame is pointed to by the <b><i>EBP</b></i> register.
+All local identifiers and variables are located based on the EBP. Hence, a
+chain of <i>EBP</i> values are pushed in the stack if there has been a sequence
+of subroutine calls. All EBP values saved are required to apply the location
+adjustment. Starting from adjusting the EBP of the trapframe, followed by
+what it points, and so on, until it points to a NUL value (delimiter value).
+</ol>
+
+<h3>Child Exits First, or Parent Waits First</h3>
+<ol>
+<li>
+If a child process calls ExitCall() before its parent calls WaitCall(),
+the <i><b>ExitSR()</b></i> will alter the process to a <b><i>ZOMBIE</b></i>
+state (not yet terminated so resources used cannot be returned, even it
+is no longer running). As its parent process subsequently issues a WaitCall(),
+the <b><i>WaitSR()</b></i> then reclaims the resources, besides the information
+<i><b>exit code</i></b> of the 'zombie' child.
+<p>
+<li>
+It may also occur as such that a parent process issues a WaitCall()
+before a child exits, the parent will then be blocked in a
+<b><i>WAIT</b></i> state, and is no longer running. As a child
+process subsequently exits, the parent will then be released, with
+the child exit code obtained. Thereafter resources of the child
+process are then reclaimed.
+</ol>
+
+
+<h3>Deliverables</h3>
+<ol>
+<li>
+Correct errors in the grading results once they get posted, or you may
+get the same error points deducted again.
+<p>
+<li>
+As before, submit only source-code files (*.c *.h events.S) to your
+team dropbox on host Voyager, in the designated phase folder.
+<p>
+<li>
+All other rules declared from previous phases regarding not to mess
+up submission directories and not to conduct plagiarism also apply.
+</ol>
+
+<h3>Review Questions</h3>
+<ol>
+<li>
+How can a child process <i>inherit</i> the resources that its parent
+is currently using? Should the ownerships of resources be kept by the
+kernel and the usage and access to them be controlled?
+<p>
+<li>
+What can a child process be aware and cognizant that it is not the parent?
+<p>
+<li>
+How can an <i>execl()</i> service be made? Can we design a similar one?
+<p>
+<li>
+What's a foreground-running process? A background-running process?
+Has this to do with any signal services?
+</ol>
