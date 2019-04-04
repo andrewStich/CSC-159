@@ -61,13 +61,31 @@ void EnQ(int to_add, q_t *p) {
 }
 
 void MemCpy((char *)dst, (char *)src, int size) {
-
+   for(int i = 0; i<size; i++ ) {
+      dst[i] = src[i];
+   }
 }
 
 int StrCmp(char *str1, char *str2) {
+   int i = 0;
+   int flag = 0;
 
+   while(flag==0) {
+      if(str1[i] > str2[i]) {
+         flag = 1;
+      }
+      else if(str1[i] < str2) {
+         flag = -1;
+      }
+      
+      if(str1 == '\0') {
+         break;
+      }
+      i++;
+   }
+   return flag;
 }
 
 void Itoa(char *str, int x) {
-
+   
 }
