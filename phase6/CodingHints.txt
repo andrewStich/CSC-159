@@ -1,0 +1,144 @@
+CodingHints.txt, Phase 6 Process Life Cycle
+
+1. Test-run: press 'n' key twice to create two terminal processes. Each
+   prompts for entry. Enter 'fork' and see what is being displayed.
+
+2. New constants:
+   FORK_CALL 53, WAIT_CALL 54, and EXIT_CALL 55
+
+3. New states:
+   ZOMBIE and WAIT
+
+4. New to PCB:
+   int ppid, to record parent PID when the process is created by ForkSR()
+
+5. New sys-calls:
+   int ForkCall(void) returns the PID of the new child process to the calling
+   (parent) process, or NONE if the call fails. If succeeded, the child gets 0.
+   int WaitCall(void) returns the exit code from the child process (as it exits)
+   void ExitCall(int) called by an exiting process, an exit code is given to
+   return to its parent process
+
+6. OS bootstrap:
+   Add to the interrupt table the 3 new entry points
+
+7. Kernel() has 3 new cases to call 3 new SR's
+
+8. k-entry.S has 3 new entry points to code
+
+9. Add to k-lib.c 3 new functions:
+   void MemCpy((char *)dst, (char *)src, int size)
+      which copies 'size' of bytes from 'src' to 'dst'
+   int StrCmp(char *str1, char *str2)
+      which returns TRUE if str1 and str2 are the same, otherwise, 0.
+   void Itoa(char *str, int x)
+      which converts an unsigned decimal number x < 100000 into str
+   
+10. in proc.c, the while(1) loop of UserProc is changed to:
+   while(1) {
+      WriteCall(device, str1);  // prompt for terminal input
+      ReadCall(device, str2);   // read terminal input
+
+      compare str2 and "fork", if not the same -> "continue;"
+
+      make a ForkCall() and get its return
+
+      if it returns NONE {
+         prompt to terminal: "Couldn't fork!"
+         continue;
+      }
+
+      if the return is == 0 --> call Aout(device);  // child code
+
+      prompt to terminal: the child PID (see demo)  // parent code
+      use Itoa() to convert # to a str and prompt it
+      prompt to terminal "\n\r" can be needed
+
+      make a WaitCall() and get an exit code from child
+
+      prompt to terminal: the child exit code (see demo)
+      use Itoa() to convert # to a str and prompt it
+      prompt to terminal "\n\r" can be needed
+   }
+
+   After UserProc(), add child code below:
+   void Aout(int device) {  // run demo to see what it does
+      get my PID
+      char str[] = "xx ( ) Hello, World!\n\r";
+
+      in above str, replace xx with my PID, and a alphabet inside
+      the bracket (alphabet B if my PID is 2, C if 3, D if 4, etc.)
+
+      prompt to terminal the str    // use same device as parent
+
+      slide my alphabet across the Target PC display:
+      cycle thru columns 0 to 69 {
+         use ShowCharCall( ...
+         use SleepCall(10);
+         use ShowCharCall( ...
+      }
+
+      call ExitCall with an exit code that is my_pid * 100
+   }
+
+11. New SR's:
+   int ForkSR(void) {
+      a. if pid_q is empty -> 1. prompt a Panic msg to PC, 2. return NONE
+      b. get a child PID from pid_q
+      (build a new PCB for the new child process:)
+      c. clear the child PCB
+      d. set the state in the child PCB to ...
+      e. set the ppid in the child PCB to ...
+      f. enqueue the child PID to ...
+
+      g. get the difference between the locations of the child's stack and the parent's
+
+      h. copy the parent's trapframe_p to the child's trapframe_p
+         (with the location adjustment applied to the new trapframe_p)
+
+      i. copy the parent's proc stack to the child (use your own MemCpy())
+      j. set the eax in the new trapframe to 0 (child proc gets 0 from ForkCall)
+      k. apply the location adjustment to esp, ebp, esi, edi in the new trapframe
+      (nested base ptrs adjustment:)
+      l. set an integer pointer p to ebp in the new trapframe
+      m. while (what p points to is not 0) {
+            1. apply the location adjustment to the value pointed
+            2. set p to the adjusted value (need a typecast)
+         }
+      n. return child PID
+   }
+
+   int WaitSR(void) {                            // parent waits
+      loop thru the PCB array (looking for a ZOMBIE child):
+         the proc ppid is run_pid and the state is ZOMBIE -> break the loop
+
+      if the whole PCB array was looped thru (didn't find any ZOMBIE child):
+         1. alter the state of run_pid to ...
+         2. set run_pid to ...
+         3. return NONE
+
+      get its exit code (from the eax of the child's trapframe)
+
+      reclaim child's resources: 
+         1. alter its state to ...
+         2. enqueue its PID to ...
+
+      return the exit code
+   }
+
+   void ExitSR(int exit_code) {                  // child exits
+      if the process state of my parent (ppid) is not WAIT:
+         1. alter my state to ...
+         2. reset run_pid to ...
+         3. return
+
+      alter the state of ppid to ...
+      enqueue ppid to ...
+      don't forget to pass it the exit code (via eax of parent's trapframe)
+
+      reclaim child's resources:
+         1. alter its state to ...
+         2. enqueue its PID to ...
+         3. reset run_pid to ...
+   }
+
