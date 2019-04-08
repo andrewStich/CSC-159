@@ -57,12 +57,40 @@ void InitProc(void) {
    }
 }
 
+void Aout(int device) {
+
+   int my_pid = GetPidCall();
+
+   char str[] = "xx ( ) Hello, World!\n\r";
+   
+   str[0] = '0' + my_pid / 10;
+   str[1] = '0' + my_pid % 10;
+
+   str[4] = 'A' + my_pid;
+
+   WriteCall(device, str);
+
+   //slide alphabet accross the screen
+   int i;
+   for(i = 0; i < 70; i++){
+      ShowCharCall(my_pid, i, str[4]);
+      SleepCall(10);
+      ShowCharCall(my_pid, i, ' ');
+   }
+
+   ExitCall(my_pid * 100);
+
+}
+
 void UserProc(void) {
    int device;
    int my_pid = GetPidCall();  // get my PID
+   int child_pid, return_code;
 
    char str1[STR_SIZE] = "PID    > ";         // <-------------------- new
    char str2[STR_SIZE];                       // <-------------------- new
+   char child_pid_string[5];
+   char return_code_string[5];
 
    str1[4] = '0' + my_pid / 10;  // show my PID
    str1[5] = '0' + my_pid % 10;
@@ -74,13 +102,24 @@ void UserProc(void) {
       ReadCall(device, str2);   // read terminal input           <-------------- new
       //WriteCall(STDOUT, str2);  // show what input was to PC     <-------------- new
    
-      if(StrCmp(str2, "fork") == FALSE ) {
-         continue;
-      }
+      if(StrCmp(str2, "fork\0") == 0) {
+	 child_pid = ForkCall();
+	 if(child_pid == NONE){
+	    WriteCall(device, "Coudn't fork!\0");
+	    continue;
+	 }else if(child_pid == 0){
+	    Aout(device);
+	 }else{
+	    Itoa(child_pid_string, child_pid);
+	    WriteCall(STDOUT, child_pid_string);
+	    WriteCall(STDOUT, "\n\r");
 
+	    return_code = WaitCall();
+	    Itoa(return_code_string[5], return_code);
+	    WriteCall(STDOUT, return_code_string);
+	    WriteCall(STDOUT, "\n\r");
+	 }
+      }
    }
 }
 
-void Aout(int device) {
-
-}

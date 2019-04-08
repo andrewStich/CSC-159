@@ -185,6 +185,8 @@ void TermTxSR(int term_no) {
 
 int ForkSR(void) {
    int childPID;
+   int mem_diff;
+   int *p;
    if(QisEmpty(&pid_q)) {
       cons_printf("Panic: no more process!\n");
       return NONE;
@@ -193,15 +195,64 @@ int ForkSR(void) {
    childPID = DeQ(&pid_q);
    Bzero((char*)&pcb[childPID], sizeof(pcb_t));          	    // clear PCB
    Bzero((char*)&proc_stack[childPID][0], PROC_STACK_SIZE);     // clear stack
-   pcb[childPID].state = READY; 
+   pcb[childPID].state = READY;
+   pcb[childPID].ppid = run_pid;
    EnQ(childPID, &ready_q);
 
+   mem_diff = &proc_stack[childPID][0] - &proc_stack[run_pid][0];
+   pcb[childPID].trapframe_p = (trapframe_t *)((int)pcb[run_pid].trapframe_p + mem_diff),
+
+   MemCpy((char *)&proc_stack[childPID], (char *)&proc_stack[run_pid], PROC_STACK_SIZE);
+
+   pcb[childPID].trapframe_p->eax = 0;
+   pcb[childPID].trapframe_p->esp = pcb[run_pid].trapframe_p->esp + mem_diff;
+   pcb[childPID].trapframe_p->ebp = pcb[run_pid].trapframe_p->ebp + mem_diff;
+   pcb[childPID].trapframe_p->esi = pcb[run_pid].trapframe_p->esi + mem_diff;
+   pcb[childPID].trapframe_p->edi = pcb[run_pid].trapframe_p->edi + mem_diff;
+   p = &pcb[childPID].trapframe_p->ebp;
+
+   while(*p != 0) {
+      *p += mem_diff;
+      p = (int *)*p;
    }
 
+   return childPID;
+}
+
 int WaitSR(void) {
-   for(int i=0; i<
+   int exit_code;
+   for(int i=0; i<PROC_SIZE; i++ ) {
+      if((pcb[i].ppid == run_pid) && (pcb[i].state == ZOMBIE)) {
+	 break;
+      }
+   }
+
+   if(i == PROC_SIZE) {
+      pcb[run_pid].state = WAIT;
+      run_pid = NONE;
+      return NONE;
+   }
+
+   exit_code = pcb[i].trapframe_p->eax;
+
+   pcb[i].state = UNUSED;
+   EnQ(i, &pid_q);
+
+   return exit_code;
 }
 
 void ExitSR(int exit_code) {
+   if(pcb[pcb[run_pid].ppid].state != WAIT) {
+      pcb[tun_pid.state] = ZOMBIE;
+      run_pid = NONE;
+      return;
+   }
 
+   pcb[pcb[run_pid].ppid].state = READY;
+   EnQ(pcb[run_pid].ppid, &ready_q);
+   pcb[pcb[run_pid].ppid].trapfream_p->eax = exit_code;
+
+   pcb[run_pid].state = UNUSED;
+   EnQ(run_pid, &pid_q);
+   run_pid = NONE;
 }

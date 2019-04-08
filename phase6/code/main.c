@@ -116,13 +116,13 @@ void Kernel(trapframe_t *trapframe_p) { 	//where prototype?   // kernel runs
 	      outportb(PIC_CONTROL, TERM1_DONE);
 	      break;	
       case FORK_CALL:
-         ForkSR();
+         trapframe_p->eax = ForkSR();
          break;
       case WAIT_CALL:
-         WaitSR();
+         trapframe->eax = WaitSR();
          break;
       case EXIT_CALL:
-         ExitSR();
+         ExitSR(trapframe_p->);
          break;
    }
                   
