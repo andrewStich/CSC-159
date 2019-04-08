@@ -67,28 +67,42 @@ void MemCpy((char *)dst, (char *)src, int size) {
 }
 
 int StrCmp(char *str1, char *str2) {
-   int i = 0;
+
    int flag = 0;
 
-   while(flag==0) {
-      if(str1[i] > str2[i]) {
+   while(flag == 0) {
+      if(*str1 > *str2) {
          flag = 1;
       }
-      else if(str1[i] < str2) {
+      else if(*str1 < *str2) {
          flag = -1;
       }
       
-      if(str1 == '\0') {
+      if(*str1 == '\0') {
          break;
       }
-      i++;
+      str1++;
+      str2++;
    }
    return flag;
 }
 
-void Itoa(char *str, int x) {
+void Itoa(char * str, int x){
+   char ch;
 
-   for(int i=0; i<6; i++) {
-      str[6-i] =  
-   } 
+   if(x >= 100000)
+      return;
+
+   for(int i=0; i<5; i++) {
+      str[i] = x % 10 + '0';
+      x /= 10;
+   }
+
+   temp = str[4];
+   str[4] = str[0];
+   str[0] = temp;
+
+   temp = str[3];
+   str[3] = str[1];
+   str[1] = temp;
 }
