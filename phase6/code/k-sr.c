@@ -184,11 +184,22 @@ void TermTxSR(int term_no) {
 }
 
 int ForkSR(void) {
+   int childPID;
+   if(QisEmpty(&pid_q)) {
+      cons_printf("Panic: no more process!\n");
+      return NONE;
+   }
 
-}
+   childPID = DeQ(&pid_q);
+   Bzero((char*)&pcb[childPID], sizeof(pcb_t));          	    // clear PCB
+   Bzero((char*)&proc_stack[childPID][0], PROC_STACK_SIZE);     // clear stack
+   pcb[childPID].state = READY; 
+   EnQ(childPID, &ready_q);
+
+   }
 
 int WaitSR(void) {
-
+   for(int i=0; i<
 }
 
 void ExitSR(int exit_code) {

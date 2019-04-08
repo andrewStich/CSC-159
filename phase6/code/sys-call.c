@@ -153,3 +153,14 @@ void ReadCall(int device, char *str) {
    }
 }
 
+int ForkCall(void) {
+
+}
+
+int WaitCall(void) {
+
+}
+
+void ExitCall(int) {
+
+}
