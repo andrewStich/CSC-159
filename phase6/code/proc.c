@@ -72,6 +72,15 @@ void UserProc(void) {
    while(1) {
       WriteCall(device, str1);  // prompt for terminal input     <-------------- new
       ReadCall(device, str2);   // read terminal input           <-------------- new
-      WriteCall(STDOUT, str2);  // show what input was to PC     <-------------- new
+      //WriteCall(STDOUT, str2);  // show what input was to PC     <-------------- new
+   
+      if(StrCmp(str2, "fork") == FALSE ) {
+         continue;
+      }
+
    }
+}
+
+void Aout(int device) {
+
 }

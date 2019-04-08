@@ -87,5 +87,8 @@ int StrCmp(char *str1, char *str2) {
 }
 
 void Itoa(char *str, int x) {
-   
+
+   for(int i=0; i<6; i++) {
+      str[6-i] =  
+   } 
 }
