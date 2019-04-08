@@ -119,10 +119,10 @@ void Kernel(trapframe_t *trapframe_p) { 	//where prototype?   // kernel runs
          trapframe_p->eax = ForkSR();
          break;
       case WAIT_CALL:
-         trapframe->eax = WaitSR();
+         trapframe_p->eax = WaitSR();
          break;
       case EXIT_CALL:
-         ExitSR(trapframe_p->);
+         ExitSR(trapframe_p->eax);
          break;
    }
                   

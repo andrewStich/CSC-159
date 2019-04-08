@@ -50,7 +50,7 @@
 
 // Phase 6 constants
 #define FORK_CALL 53
-#define WRITE_CALL 54
+#define WAIT_CALL 54
 #define EXIT_CALL 55
 
 #endif

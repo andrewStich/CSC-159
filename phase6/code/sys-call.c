@@ -181,7 +181,7 @@ void ExitCall(int exit_code) {
    asm("mov %0, %%eax;
         int %1"
 	:
-	: "g" (exit_code)
+	: "g" (exit_code), "g" (EXIT_CALL)
 	: "eax"
    );
 }

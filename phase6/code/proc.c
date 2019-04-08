@@ -58,7 +58,7 @@ void InitProc(void) {
 }
 
 void Aout(int device) {
-
+   int i;
    int my_pid = GetPidCall();
 
    char str[] = "xx ( ) Hello, World!\n\r";
@@ -71,7 +71,6 @@ void Aout(int device) {
    WriteCall(device, str);
 
    //slide alphabet accross the screen
-   int i;
    for(i = 0; i < 70; i++){
       ShowCharCall(my_pid, i, str[4]);
       SleepCall(10);

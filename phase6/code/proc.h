@@ -7,7 +7,7 @@
 void Delay(void);		//AS
 void ShowChar(int, int, char);	//AS
 void InitProc(void);		//AS
-void UserProc(void);		//AS
 void Aout(int);
+void UserProc(void);		//AS
 
 #endif				//AS

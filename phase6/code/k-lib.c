@@ -60,8 +60,9 @@ void EnQ(int to_add, q_t *p) {
 	}
 }
 
-void MemCpy((char *)dst, (char *)src, int size) {
-   for(int i = 0; i<size; i++ ) {
+void MemCpy(char *dst, char *src, int size) {
+   int i;
+   for(i = 0; i<size; i++ ) {
       dst[i] = src[i];
    }
 }
@@ -89,20 +90,21 @@ int StrCmp(char *str1, char *str2) {
 
 void Itoa(char * str, int x){
    char ch;
+   int i;
 
    if(x >= 100000)
       return;
 
-   for(int i=0; i<5; i++) {
+   for(i=0; i<5; i++) {
       str[i] = x % 10 + '0';
       x /= 10;
    }
 
-   temp = str[4];
+   ch = str[4];
    str[4] = str[0];
-   str[0] = temp;
+   str[0] = ch;
 
-   temp = str[3];
+   ch = str[3];
    str[3] = str[1];
-   str[1] = temp;
+   str[1] = ch;
 }

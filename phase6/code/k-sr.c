@@ -221,7 +221,8 @@ int ForkSR(void) {
 
 int WaitSR(void) {
    int exit_code;
-   for(int i=0; i<PROC_SIZE; i++ ) {
+   int i;
+   for(i=0; i<PROC_SIZE; i++ ) {
       if((pcb[i].ppid == run_pid) && (pcb[i].state == ZOMBIE)) {
 	 break;
       }
@@ -243,14 +244,14 @@ int WaitSR(void) {
 
 void ExitSR(int exit_code) {
    if(pcb[pcb[run_pid].ppid].state != WAIT) {
-      pcb[tun_pid.state] = ZOMBIE;
+      pcb[run_pid].state = ZOMBIE;
       run_pid = NONE;
       return;
    }
 
    pcb[pcb[run_pid].ppid].state = READY;
    EnQ(pcb[run_pid].ppid, &ready_q);
-   pcb[pcb[run_pid].ppid].trapfream_p->eax = exit_code;
+   pcb[pcb[run_pid].ppid].trapframe_p->eax = exit_code;
 
    pcb[run_pid].state = UNUSED;
    EnQ(run_pid, &pid_q);

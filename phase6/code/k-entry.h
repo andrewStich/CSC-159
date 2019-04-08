@@ -19,6 +19,9 @@ void MuxCreateEntry(void);
 void MuxOpEntry(void);
 void Term0Entry(void);
 void Term1Entry(void);
+void ForkEntry(void);
+void WaitEntry(void);
+void ExitEntry(void);
 
 __END_DECLS
 
