@@ -155,7 +155,6 @@ void TermRxSR(int term_no) {
 
    if(ch == '\r') {
       EnQ('\n', &term[term_no].echo_q);
-      EnQ('\r', &term[term_no].echo_q);
       EnQ('\0', &term[term_no].in_q);
    }
    else {
@@ -176,9 +175,10 @@ void TermTxSR(int term_no) {
    if(!QisEmpty(&term[term_no].echo_q)) {
       temp = DeQ(&term[term_no].echo_q);
    }else{
-      temp = DeQ(&term[term_no].out_q);    
+      temp = DeQ(&term[term_no].out_q);   
+   } 
       outportb(term[term_no].io_base+DATA, temp);
       term[term_no].tx_missed = FALSE;
       MuxOpSR(term[term_no].out_mux, UNLOCK);
-   }
+   
 }
