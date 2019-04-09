@@ -67,28 +67,23 @@ void MemCpy(char *dst, char *src, int size) {
    }
 }
 
-int StrCmp(char *str1, char *str2) {
+int StrCmp(char *str1, char *str2) 
 
-   int flag = 0;
-
-   while(flag == 0) {
-      if(*str1 > *str2) {
-         flag = 1;
-      }
-      else if(*str1 < *str2) {
-         flag = -1;
+   while(1) {
+      if(*str1 != *str2) {
+         return FALSE;
       }
       
       if(*str1 == '\0') {
-         break;
+         return TRUE;
       }
       str1++;
       str2++;
    }
-   return flag;
 }
 
 void Itoa(char * str, int x){
+   //needs editing
    char ch;
    int i;
 
