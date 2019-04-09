@@ -15,9 +15,7 @@ int QisFull(q_t*);		//AS
 int DeQ(q_t*);			//AS
 void EnQ(int, q_t*);		//AS
 void MemCpy(char *, char *, int);
-int StrCmp(char, char);
-void Swap(char *, char *);
-void Reverse(char *, int, int);
+int StrCmp(char *, char *);
 void Itoa(char *, int);
 
 #endif

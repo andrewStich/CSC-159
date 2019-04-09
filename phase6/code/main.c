@@ -116,7 +116,7 @@ void Kernel(trapframe_t *trapframe_p) { 	//where prototype?   // kernel runs
 	      outportb(PIC_CONTROL, TERM1_DONE);
 	      break;	
       case FORK_CALL:
-         trapframe_p->eax = ForkSR();
+	 trapframe_p->eax = ForkSR();
          break;
       case WAIT_CALL:
          trapframe_p->eax = WaitSR();

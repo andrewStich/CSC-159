@@ -98,28 +98,29 @@ void UserProc(void) {
 
    while(1) {
       WriteCall(device, str1);  // prompt for terminal input     <-------------- new
-      ReadCall(devic:e, str2);   // read terminal input           <-------------- new
+      ReadCall(device, str2);   // read terminal input           <-------------- new
       //WriteCall(STDOUT, str2);  // show what input was to PC     <-------------- new
    
-      if(!StrCmp(str2, "fork")) 
+      if(StrCmp(str2, "fork\0") == FALSE){ 
          continue;
+      }
 
-	   child_pid = ForkCall();
-	   if(child_pid == NONE){
-	      WriteCall(device, "Coudn't fork!\0");
-	      continue;
-	   }else if(child_pid == 0){
-	      Aout(device);
-	   }else{
-	      Itoa(child_pid_string, child_pid);
-	      WriteCall(STDOUT, child_pid_string);
-	      WriteCall(STDOUT, "\n\r");
+      child_pid = ForkCall();
+      if(child_pid == NONE){
+         WriteCall(device, "Coudn't fork!\0");
+	 continue;
+      }else if(child_pid == 0){
+	 Aout(device);
+      }else{
+	 Itoa(child_pid_string, child_pid);
+         WriteCall(device, child_pid_string);
+	 WriteCall(device, "\n\r");
 
-	      return_code = WaitCall();
-	      Itoa(return_code_string[5], return_code);
-	      WriteCall(STDOUT, return_code_string);
-	      WriteCall(STDOUT, "\n\r");
-	   }
+         return_code = WaitCall();
+	 Itoa(return_code_string, return_code);
+         WriteCall(device, return_code_string); 
+	 WriteCall(device, "\n\r");
+      }
    }
 }
 

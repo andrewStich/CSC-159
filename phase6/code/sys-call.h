@@ -12,7 +12,7 @@ void SleepCall(int);
 int MuxCreateCall(int);
 void MuxOpCall(int, int);
 void WriteCall(int, char *);
-void ReadCall(int, char);
+void ReadCall(int, char *);
 int ForkCall(void);
 int WaitCall(void);
 void ExitCall(int);

@@ -67,14 +67,14 @@ void MemCpy(char *dst, char *src, int size) {
    }
 }
 
-int StrCmp(char *str1, char *str2) 
+int StrCmp(char *str1, char *str2){ 
 
    while(1) {
       if(*str1 != *str2) {
          return FALSE;
       }
       
-      if(*str1 == '\0') {
+      if(*str2 == '\0') {
          return TRUE;
       }
       str1++;
@@ -82,7 +82,7 @@ int StrCmp(char *str1, char *str2)
    }
 }
 
-void Itoa(char * str, int x){
+void Itoa(char *str, int x){  //Maybe it doesn't need NULL at the end?
    //needs editing
    char ch;
    int i;
@@ -90,16 +90,22 @@ void Itoa(char * str, int x){
    if(x >= 100000)
       return;
 
-   for(i=0; i<5; i++) {
+   for(i=0; i < 5; i++) {
       str[i] = x % 10 + '0';
       x /= 10;
    }
 
-   ch = str[4];
-   str[4] = str[0];
+   str[5] = '\0';
+
+   ch = str[5];
+   str[5] = str[0];
    str[0] = ch;
 
-   ch = str[3];
-   str[3] = str[1];
+   ch = str[4];
+   str[4] = str[1];
    str[1] = ch;
+
+   ch = str[3];
+   str[3] = str[2];
+   str[2] = ch;
 }
