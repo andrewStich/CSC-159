@@ -88,8 +88,8 @@ void UserProc(void) {
 
    char str1[STR_SIZE] = "PID    > ";         // <-------------------- new
    char str2[STR_SIZE];                       // <-------------------- new
-   char child_pid_string[5];
-   char return_code_string[5];
+   char child_pid_string[STR_SIZE] = "Child PID=    ";
+   char child_exit_code[STR_SIZE] = "Child Exit Code=    ";
 
    str1[4] = '0' + my_pid / 10;  // show my PID
    str1[5] = '0' + my_pid % 10;
@@ -101,26 +101,33 @@ void UserProc(void) {
       ReadCall(device, str2);   // read terminal input           <-------------- new
       //WriteCall(STDOUT, str2);  // show what input was to PC     <-------------- new
    
-      if(StrCmp(str2, "fork\0") == FALSE){ 
+      if(StrCmp(str2, "fork") == FALSE){ 
          continue;
       }
 
       child_pid = ForkCall();
       if(child_pid == NONE){
-         WriteCall(device, "Coudn't fork!\0");
+         WriteCall(device, "Couldn't fork!\0");
 	 continue;
-      }else if(child_pid == 0){
-	 Aout(device);
-      }else{
-	 Itoa(child_pid_string, child_pid);
-         WriteCall(device, child_pid_string);
-	 WriteCall(device, "\n\r");
-
-         return_code = WaitCall();
-	 Itoa(return_code_string, return_code);
-         WriteCall(device, return_code_string); 
-	 WriteCall(device, "\n\r");
       }
+      if(child_pid == 0){
+	 Aout(device);
+      }
+       
+      if(child_pid > 9){
+	 Itoa(&child_pid_string[11], child_pid);
+      }else{
+	 Itoa(&child_pid_string[12], child_pid);
+      }
+
+      WriteCall(device, child_pid_string);
+      WriteCall(device, "\n\r");
+
+      return_code = WaitCall();
+      Itoa(&child_exit_code[17], return_code);
+      WriteCall(device, child_exit_code); 
+      WriteCall(device, "\n\r");
+      
    }
 }
 

@@ -73,7 +73,7 @@ int StrCmp(char *str1, char *str2){
       if(*str1 != *str2) {
          return FALSE;
       }
-      
+       
       if(*str2 == '\0') {
          return TRUE;
       }
@@ -82,30 +82,28 @@ int StrCmp(char *str1, char *str2){
    }
 }
 
-void Itoa(char *str, int x){  //Maybe it doesn't need NULL at the end?
-   //needs editing
-   char ch;
+void Itoa(char *str, int x){  
+
    int i;
+   int n = 0;
+   int temp_x = x;
 
    if(x >= 100000)
       return;
 
-   for(i=0; i < 5; i++) {
-      str[i] = x % 10 + '0';
+   if(x <= 9){
+      n = 1;
+   }else{
+      while(temp_x != 0){
+	 temp_x /= 10;
+	 n++;
+      }
+   }
+
+   for(i=0; i < n; i++) {
+      str[n-1-i] = x % 10 + '0';
       x /= 10;
    }
 
-   str[5] = '\0';
-
-   ch = str[5];
-   str[5] = str[0];
-   str[0] = ch;
-
-   ch = str[4];
-   str[4] = str[1];
-   str[1] = ch;
-
-   ch = str[3];
-   str[3] = str[2];
-   str[2] = ch;
+   return;
 }

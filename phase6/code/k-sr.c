@@ -155,7 +155,6 @@ void TermRxSR(int term_no) {
 
    if(ch == '\r') {
       EnQ('\n', &term[term_no].echo_q);
-      EnQ('\r', &term[term_no].echo_q);
       EnQ('\0', &term[term_no].in_q);
    }
    else {
@@ -176,11 +175,12 @@ void TermTxSR(int term_no) {
    if(!QisEmpty(&term[term_no].echo_q)) {
       temp = DeQ(&term[term_no].echo_q);
    }else{
-      temp = DeQ(&term[term_no].out_q);    
-      outportb(term[term_no].io_base+DATA, temp);
-      term[term_no].tx_missed = FALSE;
+      temp = DeQ(&term[term_no].out_q);  
       MuxOpSR(term[term_no].out_mux, UNLOCK);
+
    }
+   outportb(term[term_no].io_base+DATA, temp);
+   term[term_no].tx_missed = FALSE;
 }
 
 int ForkSR(void) {
@@ -193,23 +193,23 @@ int ForkSR(void) {
    }
 
    childPID = DeQ(&pid_q);
-   Bzero((char*)&pcb[childPID], sizeof(pcb_t));          	    // clear PCB
-   Bzero((char*)&proc_stack[childPID][0], PROC_STACK_SIZE);     // clear stack
+   Bzero((char*)&pcb[childPID], sizeof(pcb_t));                 // clear PCB
+   //Bzero((char*)&proc_stack[childPID][0], PROC_STACK_SIZE);     // clear stack
    pcb[childPID].state = READY;
    pcb[childPID].ppid = run_pid;
    EnQ(childPID, &ready_q);
 
-   mem_diff = &proc_stack[childPID][0] - &proc_stack[run_pid][0];
+   mem_diff = (int)&proc_stack[childPID][0] - (int)&proc_stack[run_pid][0];
    pcb[childPID].trapframe_p = (trapframe_t *)((int)pcb[run_pid].trapframe_p + mem_diff),
 
-   MemCpy((char *)&proc_stack[childPID], (char *)&proc_stack[run_pid], PROC_STACK_SIZE);
+   MemCpy((char *)((int)&(proc_stack[run_pid][0]) + mem_diff), &proc_stack[run_pid][0], PROC_STACK_SIZE);
 
    pcb[childPID].trapframe_p->eax = 0;
-   pcb[childPID].trapframe_p->esp = pcb[run_pid].trapframe_p->esp + mem_diff;
-   pcb[childPID].trapframe_p->ebp = pcb[run_pid].trapframe_p->ebp + mem_diff;
-   pcb[childPID].trapframe_p->esi = pcb[run_pid].trapframe_p->esi + mem_diff;
-   pcb[childPID].trapframe_p->edi = pcb[run_pid].trapframe_p->edi + mem_diff;
-   p = &pcb[childPID].trapframe_p->ebp;
+   pcb[childPID].trapframe_p->esp = pcb[childPID].trapframe_p->esp + mem_diff;
+   pcb[childPID].trapframe_p->ebp = pcb[childPID].trapframe_p->ebp + mem_diff;
+   pcb[childPID].trapframe_p->esi = pcb[childPID].trapframe_p->esi + mem_diff;
+   pcb[childPID].trapframe_p->edi = pcb[childPID].trapframe_p->edi + mem_diff;
+   p = (int *)pcb[childPID].trapframe_p->ebp;
 
    while(*p != 0) {
       *p += mem_diff;
