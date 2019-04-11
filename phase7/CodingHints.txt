@@ -1,0 +1,86 @@
+Phase 7 Real Memory & Signal
+
+1. Demo runs are similar to the previous phase except pressing CTL-C has a
+   handler (OS now serves the signal IPC).
+
+2. Rename k-lib.c to tools.c.
+
+3. New contants are:
+   EXEC_CALL 56, for ExecCall(), for child process to run its own code
+   SIGNAL_CALL 57, for SignalCall(), to request a signal-handler service
+   SIGINT 3, CTRL-C (ASCII 3)
+   PAGE_NUM 20, OS has 20 DRAM pages (to experiment with)
+   PAGE_SIZE 4096, each DRAM page is 4KB
+   RAM 0xe00000, DRAM starts at 14MB
+
+4. PCB needs a new "int sigint_handler" in it.
+   A new function-ptr type is needed: typedef void (* func_p_t2)(int)
+   for function pointer pointing to: void Ouch(int), void Aout(int).
+   (But, we'll prefer to typecast it into 'int' to ease programming.)
+
+5. The kernel now manages memory with: int page_user[PAGE_NUM] which
+   are initially all NONE (no processes using them -- no PID in each).
+
+6. Two new entries are added to k-entry.S and their addresses are added
+   into the intr_table: ExecEntry and SignalEntry.
+
+7. Two new service calls are added into syscall.c:
+      void ExecCall(int code_addr, int argument), and
+      void SignalCall(int sig_num, int handler_addr)
+
+8. Kernel() will have two new cases to call their SR's:
+     ExecSR(...->eax, ...->ebx), and
+     SignalSR(...->eax, ...->ebx)
+
+9. in proc.c:
+   Aout() is unchanged from the previous phase but in UserProc(),
+   after ForkCall, the child calls ExecCall(Aout, device) to start
+   child's own RAM space for both of its code and stack.
+
+   The handler code when CTRL-C is pressed at a terminal:
+   void Ouch(int device) {
+      WriteCall(device, "Can't touch that!\n\r");
+   }
+
+   void Wrapper(int handler_p, int arg) {   // args implanted in stack
+      func_p_t2 func = (func_p_t2)handler_p;
+
+      asm("pushal");                       // save regs
+      func(arg);                           // call signal handler with arg
+      asm("popal");                        // restore regs
+      asm("movl %%ebp, %%esp; popl %%ebp; ret $8"::); // skip Ouch addr
+   }
+ 
+10. in k-sr.c
+   void ExecSR(int code_addr, int arg) {
+      1. allocate two DRAM pages, one for code, one for stack space:
+         loop thru page_user[] for two pages that are currently NONE
+         once found, set their user to run_pid
+      2. calcuate their addresses = RAM + i * PAGE_SIZE where i is
+         the index to the array when it had NONE.
+      3. copy PAGE_SIZE bytes from code_addr to the code page found
+         (use your own MemCpy())
+      4. Bzero the allocated stack page 1st
+      5. from the top of the stack page, push/copy the 'arg' there
+      6. then skip a whole 4 bytes (or an integer)
+      7. set the trapframe pointer in PCB of run_pid
+      8. decrement trapframe pointer by 1 (whole trapframe)
+      9. use the trapframe pointer to set efl and cs (as in NewProcSR)
+     10. however, set the eip to the address of the code page
+   }
+
+   void SignalSR(int sig_num, int handler_addr) {
+      simply copy handler_addr to sigint_handler in PCB of run_pid
+   }
+
+   void WrapperSR(int pid, int handler_p, int arg) {
+      mov the trapframe of pid lower by space of three integers
+      the 3-integer space above the trapframe will have:
+         arg (will become 2nd arg of Wrapper)
+         handler_addr (will become 1st arg of Wrapper)
+         original eip in the trapframe (will resume as Wrapper ends)
+         (below is original trapframe)
+      change the eip in the lowered trapframe to (int)Wrapper so it
+      runs as the trapframe is loaded into the CPU
+   }
+
