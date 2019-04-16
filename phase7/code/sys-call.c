@@ -170,22 +170,22 @@ void ExitCall(int exit_code) {
 }
 
 void ExecCall(int code_addr, int argument) {
-   asm("mov $0, %%eax
-        mov $1, %%ebx
+   asm("mov $0, %%eax;
+        mov $1, %%ebx;
         int $2"
         :
         : "g" (code_addr), "g" (argument), "g" (EXEC_CALL)
         : "eax", "ebx"
-        );
+   );
 }
 
 void SignalCall(int sig_num, int handler_addr) {
-   asm("mov $0, %%eax
-        mov $1, %%ebx
+   asm("mov $0, %%eax;
+        mov $1, %%ebx;
         int $2"
         :
         : "g" (sig_num), "g" (handler_addr), "g" (SIGNAL_CALL)
         : "eax", "ebx"
-        );
+   );
 
 }

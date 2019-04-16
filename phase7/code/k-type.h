@@ -16,10 +16,10 @@ typedef struct {
 
 typedef struct {
    state_t state;                       // read in 1.html ++++++
-	int run_count;
-	int total_count;
+   int run_count;
+   int total_count;
    int wake_centi_sec;                    // AS | coding hints 2
-	trapframe_t *trapframe_p;
+   trapframe_t *trapframe_p;
    int ppid;
    int sigint_handler;
 } pcb_t;                     

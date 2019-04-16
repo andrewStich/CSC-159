@@ -96,7 +96,8 @@ void UserProc(void) {
 
    device = my_pid % 2 == 1? TERM0_INTR : TERM1_INTR;
 
-   
+   SignalCall(device, Ouch);    // in phase 7 notes
+
    while(1) {
       WriteCall(device, str1);  // prompt for terminal input     <-------------- new
       ReadCall(device, str2);   // read terminal input           <-------------- new
@@ -112,7 +113,7 @@ void UserProc(void) {
 	 continue;
       }
       if(child_pid == 0){
-	      ExecCall(Aout, device);
+	 ExecCall(Aout, device);
       }
        
       if(child_pid > 9){
@@ -142,7 +143,10 @@ void Wrapper(int handler_p, int arg) {
    asm("pushal");
    func(arg);
    asm("popal");
-   asm("mov %%ebp, %%esp
-        popl %%ebp
-        ret $8"::);
+   asm("mov %%ebp, %%esp;
+        popl %%ebp;
+        ret $8"
+	:
+	:
+   );
 }

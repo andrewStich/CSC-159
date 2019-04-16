@@ -149,13 +149,16 @@ void TermSR(int term_no) {
 
 void TermRxSR(int term_no) {
    char ch;
+   int q_id = &mux[term[term_no].out_mux].suspend_q;
+   int temp_handler = pcb[run_pid].sigint_handler;
 
    ch = inportb(term[term_no].io_base + DATA);
    EnQ(ch, &term[term_no].echo_q);
 
-   if(ch == SIGINT) {
+   if(ch == SIGINT && !QisEmpty(q_id) && temp_handler != 0) {
       //alter runtime stack of suspended process
-      SignalCall(SIGINT, Ouch());
+      wrapperSR(runpid, pcb[run_pid].sigint_handler, device);
+      SignalCall(SIGINT, (int)Ouch);
    }
    if(ch == '\r') {
       EnQ('\n', &term[term_no].echo_q);
@@ -228,6 +231,7 @@ int WaitSR(void) {
    int i;
    for(i=0; i<PROC_SIZE; i++ ) {
       if((pcb[i].ppid == run_pid) && (pcb[i].state == ZOMBIE)) {
+	 Bzero((char*)&pcb[childPID], sizeof(pcb_t)); 	 
 	 break;
       }
    }
@@ -263,14 +267,67 @@ void ExitSR(int exit_code) {
 }
 
 void ExecSR(int code_addr, int arg) {
+   int i, count, code_page, stack_space, code_page_addr, stack_space_addr;
+   count = 0;
+   
+   // Allocate two DRAM pages, one for code, one for stack space
+   for(i = 0; i < PAGE_NUM; i++){
+      if(page_user[i] == NONE){
+	 page_user[i] = run_pid;
+	 count++;
+      }
+      if(count == 1){
+	 code_page = i;
+      }else if(count == 2){
+	 stack_space = i;
+	 break;
+      }
+   }
+   // Calculating page address, REPLACE 14MB with something else
+   code_page_addr = code_page * PAGE_SIZE + 0xe00000;
+   stack_space_addr = stack_space & PAGE_SIZE + 0xe00000; 
 
+   // Copy PAGE_SIZE bytes from 'code' to the allocated code page
+   MemCpy((char *)&_, &_, PAGE_SIZE);
+
+   //Bzero the allocated stack page
+   Bzero((char*)&_, sizeof(_)); 
+
+   //From the top of the stack page, copy 'arg' there
+
+   //Skip a whole 4 bytes (return addrress, size of an integer)
+
+   //Lower the trapframe address in the PCB of run_pid by the size of two integers
+   (int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - 2;
+
+   //Decrement the trapframe pointer by 1 (one whole trapframe)
+   pcb[run_pid].trapframe_p--;
+   
+   //Use the trapframe pointer to set efl and cs
+   pcb[pid].trapframe_p->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
+   pcb[pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
+
+   //Set eip to the start of the new code page
+   pcb[pid].trapframe_p->eip = _;
 }
 
-void SignalSR(int sig_sum, int handler_addr) {
+void SignalSR(int sig_num, int handler_addr) {
    pcb[run_pid].sigint_handler = handler_addr;
-   //??????
+   // sig_num will be used in a future phase
 }
 
 void WrapperSR(int pid, int handler_p, int arg) {
+   //Lower the trapframe address by the size of 3 integers
+   (int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - 3;
 
+   //Fill the space of the vacated 3 integers 
+   //'arg' (2nd arg to Wrapper)
+   //'handler' (1st arg to Wrapper)
+   //'eip' in the original trapframe (UserProc resumes)
+   Wrapper(handler_p, arg);
+
+   //Change eip in the trapframe to Wrapper to run it 1st
+
+   //Change trapframe location info in the PCB of this pid
+   
 }
