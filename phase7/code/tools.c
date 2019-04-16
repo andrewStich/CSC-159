@@ -74,7 +74,7 @@ int StrCmp(char *str1, char *str2){
          return FALSE;
       }
        
-      if(*str2 == '\0') {
+      if(*str2 == '\0' && *str1 == '\0') { //added str1 condition
          return TRUE;
       }
       str1++;
@@ -105,5 +105,6 @@ void Itoa(char *str, int x){
       x /= 10;
    }
 
+   str[n] = '\0'; //add null character to end of string
    return;
 }
