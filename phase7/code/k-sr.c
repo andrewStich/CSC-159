@@ -292,11 +292,11 @@ void ExitSR(int exit_code) {
 }
 
 void ExecSR(int code_addr, int arg) {
-   int i, count, code_page, stack_space;
-   char * code_space_address;
-   char * stack_space_address;
+   int i, code_page, stack_page;
+   char * code_space_addr;
+   char * stack_space_addr;
    code_page = NONE;
-   stack_space = NONE;
+   stack_page = NONE;
    
    // Allocate two DRAM pages, one for code, one for stack space
    for(i = 0; i < PAGE_NUM; i++){
@@ -317,11 +317,11 @@ void ExecSR(int code_addr, int arg) {
       }
    }
    // Calculating page address, REPLACE 14MB with something else
-   code_page_addr = (char *)((code_page * PAGE_SIZE) + RAM);
-   stack_space_addr = (char *)((stack_space * PAGE_SIZE) + RAM); 
+   code_space_addr = (char *)((code_page * PAGE_SIZE) + RAM);
+   stack_space_addr = (char *)((stack_page * PAGE_SIZE) + RAM); 
 
    // Copy PAGE_SIZE bytes from 'code' to the allocated code page
-   MemCpy(code_page_addr, (char *)code_addr, PAGE_SIZE);
+   MemCpy(code_space_addr, (char *)code_space_addr, PAGE_SIZE);
 
    //Bzero the allocated stack page
    Bzero(stack_space_addr, PAGE_SIZE); 
@@ -346,7 +346,7 @@ void ExecSR(int code_addr, int arg) {
    pcb[run_pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
 
    //Set eip to the start of the new code page
-   pcb[run_pid].trapframe_p->eip = (unsigned int)code_page_addr;
+   pcb[run_pid].trapframe_p->eip = (unsigned int)code_space_addr;
 }
 
 void SignalSR(int sig_num, int handler_addr) {
