@@ -58,7 +58,7 @@ OS_NAME = MyOS
 #       NOTE: Keep the spaces around the equals sign (=) please.
 #	If this changes, run "make depend" to update $OBJECTS.
 #
-SRC = k-entry.S k-lib.c k-sr.c main.c proc.c sys-call.c 
+SRC = k-entry.S k-sr.c main.c proc.c sys-call.c tools.c 
 
 #
 #  (3) Add any compiler options you want.  They will be passed to gcc386
@@ -277,7 +277,7 @@ help ::
 #  List of object files.
 #### YQYQYQ-MARK-1 ####
 
-OBJECTS =  k-entry.o k-lib.o k-sr.o main.o proc.o sys-call.o
+OBJECTS =  k-entry.o k-sr.o main.o proc.o sys-call.o tools.o
 
 #### YQYQYQ-STOP-1 ####
 #-------------------------------------
@@ -331,27 +331,12 @@ $(MY_DLI) :	$(OBJECTS) Makefile
 #  Dependencies.
 #### YQYQYQ-MARK-2 ####
 #
-#  Dependencies generated Mon Apr  8 21:18:25 PDT 2019 by (spede-mkmf $Revision: 1.2 $/1)
+#  Dependencies generated Mon Apr 15 21:16:05 PDT 2019 by (spede-mkmf $Revision: 1.2 $/1)
 #
 
 k-entry.o: k-entry.S k-const.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h
-k-lib.o: k-lib.c k-include.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdio.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdarg.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/types.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/ascii.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/bits.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/io.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stddef.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/proc_reg.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/seg.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
- k-type.h k-const.h k-data.h
 k-sr.o: k-sr.c k-include.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdio.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -366,7 +351,7 @@ k-sr.o: k-sr.c k-include.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/seg.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
- k-type.h k-const.h k-data.h k-lib.h k-sr.h
+ k-type.h k-const.h k-data.h tools.h k-sr.h proc.h
 main.o: main.c k-include.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdio.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -381,8 +366,8 @@ main.o: main.c k-include.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/seg.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
- k-entry.h k-type.h k-const.h k-lib.h k-data.h k-sr.h proc.h
-proc.o: proc.c k-const.h sys-call.h k-data.h k-type.h k-lib.h \
+ k-entry.h k-type.h k-const.h tools.h k-data.h k-sr.h proc.h
+proc.o: proc.c k-const.h sys-call.h k-data.h k-type.h tools.h \
  k-include.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdio.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -396,8 +381,9 @@ proc.o: proc.c k-const.h sys-call.h k-data.h k-type.h k-lib.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/proc_reg.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/seg.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
- /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h
-sys-call.o: sys-call.c k-const.h k-data.h k-type.h k-lib.h k-include.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
+ proc.h
+sys-call.o: sys-call.c k-const.h k-data.h k-type.h tools.h k-include.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdio.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdarg.h \
@@ -411,6 +397,21 @@ sys-call.o: sys-call.c k-const.h k-data.h k-type.h k-lib.h k-include.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/seg.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h
+tools.o: tools.c k-include.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdio.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdarg.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/types.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/ascii.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/bits.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/io.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stddef.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/proc_reg.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/seg.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
+ /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
+ k-type.h k-const.h k-data.h
 
 #### YQYQYQ-STOP-2 ####
 

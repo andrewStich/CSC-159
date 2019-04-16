@@ -6,7 +6,7 @@
 #include "k-include.h"  // SPEDE includes
 #include "k-entry.h"    // entries to kernel (TimerEntry, etc.)
 #include "k-type.h"     // kernel data types
-#include "k-lib.h"      // small handy functions
+#include "tools.h"      // small handy functions
 #include "k-sr.h"       // kernel service routines
 #include "proc.h"       // all user process code here
 
@@ -57,8 +57,8 @@ void InitKernelControl(void) { 			//wheres prototype   // init kernel control
    fill_gate(&intr_table[FORK_CALL], (int)ForkEntry, get_cs(), ACC_INTR_GATE, 0);
    fill_gate(&intr_table[WAIT_CALL], (int)WaitEntry, get_cs(), ACC_INTR_GATE, 0);
    fill_gate(&intr_table[EXIT_CALL], (int)ExitEntry, get_cs(), ACC_INTR_GATE, 0);
-   fill_gate(&intr_table[EXEC_CALL], (int)ExecEntry, get_ac(), ACC_INTR_GATE, 0);
-   fill_gate(&intr_table[SIGNAL_CALL], (int)SignalEntry, get_ac(), ACC_INTR_TABLE, 0);
+   fill_gate(&intr_table[EXEC_CALL], (int)ExecEntry, get_cs(), ACC_INTR_GATE, 0);
+   fill_gate(&intr_table[SIGNAL_CALL], (int)SignalEntry, get_cs(), ACC_INTR_GATE, 0);
 
    outportb(PIC_MASK, MASK);                   	// AS | prep4 mask out PIC for timer
 }
@@ -134,7 +134,7 @@ void Kernel(trapframe_t *trapframe_p) { 	//where prototype?   // kernel runs
          ExecSR(trapframe_p->eax, trapframe_p->ebx);
          break;
       case SIGNAL_CALL:
-         SignalSR(trapframe_p->eax, trapframe_p-ebx);
+         SignalSR(trapframe_p->eax, trapframe_p->ebx);
          break;
    }
                   

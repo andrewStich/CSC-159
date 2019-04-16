@@ -3,8 +3,9 @@
 #include "k-include.h"
 #include "k-type.h"
 #include "k-data.h"
-#include "k-lib.h"
+#include "tools.h"
 #include "k-sr.h"
+#include "proc.h"
 
 // to create a process: alloc PID, PCB, and process stack
 // build trapframe, initialize PCB, record PID to ready_q
@@ -13,7 +14,7 @@ void NewProcSR(func_p_t p) {  // arg: where process code starts
 
    if(QisEmpty(&pid_q)) {     			//pid_q is empty, may occur if too many been created
       cons_printf("Panic: no more process!\n");
-      breakpoint();          			// AS |  cannot continue, alternative: breakpoint();
+      //breakpoint();          			// AS |  cannot continue, alternative: breakpoint();
       return;
    }
 
@@ -32,7 +33,7 @@ void NewProcSR(func_p_t p) {  // arg: where process code starts
    //pcb[pid].trapframe_p--; 	 	                	 // lower by trapframe size
    pcb[pid].trapframe_p->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
    pcb[pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
-   pcb[pid].trapframe_p->eip = (int)p;                	         // set to code
+   pcb[pid].trapframe_p->eip = (unsigned int)p;                	         // set to code
 }
 
 void CheckWakeProc(void){
@@ -149,17 +150,27 @@ void TermSR(int term_no) {
 
 void TermRxSR(int term_no) {
    char ch;
-   int q_id = &mux[term[term_no].out_mux].suspend_q;
-   int temp_handler = pcb[run_pid].sigint_handler;
+   int suspend_pid, device;
 
    ch = inportb(term[term_no].io_base + DATA);
+
+   if(ch == SIGINT){
+      if(!QisEmpty(&mux[term[term_no].in_mux].suspend_q)){
+	 suspend_pid = mux[term[term_no].in_mux].suspend_q.q[0];
+	 if(pcb[suspend_pid].sigint_handler) {
+	    //alter runtime stack of suspended process
+	    if(term_no == 0){
+	       device = TERM0_INTR;
+	    }else{
+	       device = TERM1_INTR;
+	    }
+	    WrapperSR(suspend_pid, pcb[suspend_pid].sigint_handler, device);
+	 }
+      }
+   }
+
    EnQ(ch, &term[term_no].echo_q);
 
-   if(ch == SIGINT && !QisEmpty(q_id) && temp_handler != 0) {
-      //alter runtime stack of suspended process
-      wrapperSR(runpid, pcb[run_pid].sigint_handler, device);
-      SignalCall(SIGINT, (int)Ouch);
-   }
    if(ch == '\r') {
       EnQ('\n', &term[term_no].echo_q);
       EnQ('\0', &term[term_no].in_q);
@@ -228,10 +239,9 @@ int ForkSR(void) {
 
 int WaitSR(void) {
    int exit_code;
-   int i;
+   int i, x;
    for(i=0; i<PROC_SIZE; i++ ) {
       if((pcb[i].ppid == run_pid) && (pcb[i].state == ZOMBIE)) {
-	 Bzero((char*)&pcb[childPID], sizeof(pcb_t)); 	 
 	 break;
       }
    }
@@ -247,10 +257,18 @@ int WaitSR(void) {
    pcb[i].state = UNUSED;
    EnQ(i, &pid_q);
 
+   for(x = 0; x < PAGE_SIZE; x++){
+      if(page_user[x] == i){
+	 page_user[x] = NONE;
+      }
+   }
+
    return exit_code;
 }
 
 void ExitSR(int exit_code) {
+   int x;
+
    if(pcb[pcb[run_pid].ppid].state != WAIT) {
       pcb[run_pid].state = ZOMBIE;
       run_pid = NONE;
@@ -263,11 +281,20 @@ void ExitSR(int exit_code) {
 
    pcb[run_pid].state = UNUSED;
    EnQ(run_pid, &pid_q);
+
+   for(x = 0; x < PAGE_SIZE; x++){
+      if(page_user[x] == run_pid){
+	 page_user[x] = NONE;
+      }
+   }
+
    run_pid = NONE;
 }
 
 void ExecSR(int code_addr, int arg) {
-   int i, count, code_page, stack_space, code_page_addr, stack_space_addr;
+   int i, count, code_page, stack_space;
+   char * code_page_addr;
+   char * stack_space_addr;
    count = 0;
    
    // Allocate two DRAM pages, one for code, one for stack space
@@ -284,31 +311,36 @@ void ExecSR(int code_addr, int arg) {
       }
    }
    // Calculating page address, REPLACE 14MB with something else
-   code_page_addr = code_page * PAGE_SIZE + 0xe00000;
-   stack_space_addr = stack_space & PAGE_SIZE + 0xe00000; 
+   code_page_addr = (char *)((code_page * PAGE_SIZE) + RAM);
+   stack_space_addr = (char *)((stack_space * PAGE_SIZE) + RAM); 
 
    // Copy PAGE_SIZE bytes from 'code' to the allocated code page
-   MemCpy((char *)&_, &_, PAGE_SIZE);
+   MemCpy(code_page_addr, (char *)code_addr, PAGE_SIZE);
 
    //Bzero the allocated stack page
-   Bzero((char*)&_, sizeof(_)); 
+   Bzero(stack_space_addr, PAGE_SIZE); 
 
    //From the top of the stack page, copy 'arg' there
+   *stack_space_addr = arg;
 
-   //Skip a whole 4 bytes (return addrress, size of an integer)
+   //Skip a whole 4 bytes (return address, size of an integer)
+   stack_space_addr = stack_space_addr + PAGE_SIZE - 1; 
 
    //Lower the trapframe address in the PCB of run_pid by the size of two integers
-   (int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - 2;
+   (int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - sizeof(int[2]);
+
+   //In html file, tells you to do this
+   pcb[run_pid].trapframe_p = (trapframe_t *)stack_space_addr;
 
    //Decrement the trapframe pointer by 1 (one whole trapframe)
    pcb[run_pid].trapframe_p--;
    
    //Use the trapframe pointer to set efl and cs
-   pcb[pid].trapframe_p->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
-   pcb[pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
+   pcb[run_pid].trapframe_p->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
+   pcb[run_pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
 
    //Set eip to the start of the new code page
-   pcb[pid].trapframe_p->eip = _;
+   pcb[run_pid].trapframe_p->eip = (unsigned int)code_page_addr;
 }
 
 void SignalSR(int sig_num, int handler_addr) {
@@ -317,16 +349,23 @@ void SignalSR(int sig_num, int handler_addr) {
 }
 
 void WrapperSR(int pid, int handler_p, int arg) {
+
+   char *p;
+   p = (char *)pcb[pid].trapframe_p;
+
    //Lower the trapframe address by the size of 3 integers
-   (int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - 3;
+   pcb[pid].trapframe_p = pcb[run_pid].trapframe_p - sizeof(int[3]);
 
    //Fill the space of the vacated 3 integers 
    //'arg' (2nd arg to Wrapper)
    //'handler' (1st arg to Wrapper)
    //'eip' in the original trapframe (UserProc resumes)
-   Wrapper(handler_p, arg);
+   *p = arg;
+   *(p + sizeof(int)) = handler_p;
+   *(p + sizeof(int[2])) = pcb[pid].trapframe_p->eip;
 
    //Change eip in the trapframe to Wrapper to run it 1st
+   pcb[pid].trapframe_p->eip = (int)Wrapper;
 
    //Change trapframe location info in the PCB of this pid
    

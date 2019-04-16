@@ -23,7 +23,7 @@ void ForkEntry(void);
 void WaitEntry(void);
 void ExitEntry(void);
 void ExecEntry(void);
-void (SignalEntry(void);
+void SignalEntry(void);
 
 __END_DECLS
 

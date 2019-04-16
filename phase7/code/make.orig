@@ -58,7 +58,7 @@ OS_NAME = MyOS
 #       NOTE: Keep the spaces around the equals sign (=) please.
 #	If this changes, run "make depend" to update $OBJECTS.
 #
-SRC = k-entry.S k-lib.c k-sr.c main.c proc.c sys-call.c 
+SRC = k-entry.S k-sr.c main.c proc.c sys-call.c tools.c 
 
 #
 #  (3) Add any compiler options you want.  They will be passed to gcc386

@@ -5,8 +5,9 @@
 #include "k-const.h"   // LOOP
 #include "sys-call.h"  // all service calls used below
 #include "k-data.h"
-#include "k-lib.h"
+#include "tools.h"
 #include "k-include.h"
+#include "proc.h"
 
 void InitTerm(int term_no) {
    int i, j;
@@ -96,7 +97,7 @@ void UserProc(void) {
 
    device = my_pid % 2 == 1? TERM0_INTR : TERM1_INTR;
 
-   SignalCall(device, Ouch);    // in phase 7 notes
+   SignalCall(SIGINT, (int)Ouch);   
 
    while(1) {
       WriteCall(device, str1);  // prompt for terminal input     <-------------- new
@@ -113,7 +114,7 @@ void UserProc(void) {
 	 continue;
       }
       if(child_pid == 0){
-	 ExecCall(Aout, device);
+	 ExecCall((int)Aout, device);
       }
        
       if(child_pid > 9){

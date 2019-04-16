@@ -64,7 +64,7 @@ ENTRY(ExecEntry)
    pushl $EXEC_CALL
    jmp PreKernel
 
-Entry(SignalEntry)
+ENTRY(SignalEntry)
    pushl $SIGNAL_CALL
    jmp PreKernel
 
@@ -75,7 +75,7 @@ PreKernel:
    mov %ax, %ds                 	// set kernel data segment registers
    mov %ax, %es                        	// set kernel data segment registers
    leal k_stack + K_STACK_SIZE, %esp    // set esp to top of kernel stack
-   push %ebx				// push ebx (onto the kernel stack) ++++++++   
+   push %ebx				// push ebx (onto the kernel stack) ++++++
    cld					// clear the direction flag of efl +++++++
    call CNAME(Kernel) 			// call C function Kernel ++++++++++
  

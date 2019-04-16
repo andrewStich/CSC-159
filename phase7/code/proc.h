@@ -10,6 +10,6 @@ void InitProc(void);		//AS
 void Aout(int);
 void UserProc(void);		//AS
 void Ouch(int);
-void Wrapper(int, int)
+void Wrapper(int, int);
 
 #endif				//AS
