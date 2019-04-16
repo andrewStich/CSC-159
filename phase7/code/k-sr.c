@@ -293,21 +293,27 @@ void ExitSR(int exit_code) {
 
 void ExecSR(int code_addr, int arg) {
    int i, count, code_page, stack_space;
-   char * code_page_addr;
-   char * stack_space_addr;
-   count = 0;
+   char * code_space_address;
+   char * stack_space_address;
+   code_page = NONE;
+   stack_space = NONE;
    
    // Allocate two DRAM pages, one for code, one for stack space
    for(i = 0; i < PAGE_NUM; i++){
-      if(page_user[i] == NONE){
-	 page_user[i] = run_pid;
-	 count++;
-      }
-      if(count == 1){
-	 code_page = i;
-      }else if(count == 2){
-	 stack_space = i;
-	 break;
+      if(page_user[i] == NONE) {
+         if(code_page == NONE) {
+            code_page = i;
+            continue;
+         }
+         else if(stack_page == NONE) {
+            stack_page = i;
+         }
+         
+         if(code_page != NONE && stack_page != NONE) {
+            page_user[code_page] = run_pid;
+            page_user[stack_page] = run_pid;
+            break;
+         }
       }
    }
    // Calculating page address, REPLACE 14MB with something else
