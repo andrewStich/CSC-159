@@ -76,6 +76,8 @@ int StrCmp(char *str1, char *str2){
        
       if(*str2 == '\0' && *str1 == '\0') { //added str1 condition
          return TRUE;
+      }else if(*str2 == '\0' || *str1 == '\0'){
+	 return FALSE;
       }
       str1++;
       str2++;

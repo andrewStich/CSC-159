@@ -292,12 +292,13 @@ void ExitSR(int exit_code) {
 }
 
 void ExecSR(int code_addr, int arg) {
+   int * p;
    int i, code_page, stack_page;
    char * code_space_addr;
    char * stack_space_addr;
    code_page = NONE;
    stack_page = NONE;
-   
+
    // Allocate two DRAM pages, one for code, one for stack space
    for(i = 0; i < PAGE_NUM; i++){
       if(page_user[i] == NONE) {
@@ -321,22 +322,26 @@ void ExecSR(int code_addr, int arg) {
    stack_space_addr = (char *)((stack_page * PAGE_SIZE) + RAM); 
 
    // Copy PAGE_SIZE bytes from 'code' to the allocated code page
-   MemCpy(code_space_addr, (char *)code_space_addr, PAGE_SIZE);
+   MemCpy(code_space_addr, (char *)code_addr, PAGE_SIZE);
 
    //Bzero the allocated stack page
    Bzero(stack_space_addr, PAGE_SIZE); 
 
    //From the top of the stack page, copy 'arg' there
-   *stack_space_addr = arg;
+   p = (int *)stack_space_addr + PAGE_SIZE;
+   p--;
+   *p = arg;
 
    //Skip a whole 4 bytes (return address, size of an integer)
-   stack_space_addr = stack_space_addr + PAGE_SIZE - 1; 
+   //stack_space_addr = stack_space_addr + PAGE_SIZE - 1; 
 
    //Lower the trapframe address in the PCB of run_pid by the size of two integers
-   (int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - sizeof(int[2]);
+   //(int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - sizeof(int[2]);
+   p--;
+   //*p = 0;
 
    //In html file, tells you to do this
-   pcb[run_pid].trapframe_p = (trapframe_t *)stack_space_addr;
+   pcb[run_pid].trapframe_p = (trapframe_t *)p;
 
    //Decrement the trapframe pointer by 1 (one whole trapframe)
    pcb[run_pid].trapframe_p--;
@@ -356,19 +361,23 @@ void SignalSR(int sig_num, int handler_addr) {
 
 void WrapperSR(int pid, int handler_p, int arg) {
 
-   char *p;
-   p = (char *)pcb[pid].trapframe_p;
+   int *p;
+   p = (int *)((int)pcb[pid].trapframe_p + sizeof(trapframe_t));
 
    //Lower the trapframe address by the size of 3 integers
-   pcb[pid].trapframe_p = pcb[run_pid].trapframe_p - sizeof(int[3]);
+   MemCpy((char *)((int)pcb[pid].trapframe_p - sizeof(int[3])), (char *)((int)pcb[pid].trapframe_p), sizeof(trapframe_t));
+
+   pcb[pid].trapframe_p = (trapframe_t *)((int)pcb[pid].trapframe_p - sizeof(int[3]));
 
    //Fill the space of the vacated 3 integers 
    //'arg' (2nd arg to Wrapper)
    //'handler' (1st arg to Wrapper)
    //'eip' in the original trapframe (UserProc resumes)
+   *p = pcb[pid].trapframe_p->eip;
+   p--;
    *p = arg;
-   *(p + sizeof(int)) = handler_p;
-   *(p + sizeof(int[2])) = pcb[pid].trapframe_p->eip;
+   p--;
+   *p = handler_p;
 
    //Change eip in the trapframe to Wrapper to run it 1st
    pcb[pid].trapframe_p->eip = (int)Wrapper;
