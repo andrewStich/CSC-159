@@ -257,7 +257,7 @@ int WaitSR(void) {
    pcb[i].state = UNUSED;
    EnQ(i, &pid_q);
 
-   for(x = 0; x < PAGE_SIZE; x++){
+   for(x = 0; x < PAGE_NUM; x++){
       if(page_user[x] == i){
 	 page_user[x] = NONE;
       }
@@ -282,7 +282,7 @@ void ExitSR(int exit_code) {
    pcb[run_pid].state = UNUSED;
    EnQ(run_pid, &pid_q);
 
-   for(x = 0; x < PAGE_SIZE; x++){
+   for(x = 0; x < PAGE_NUM; x++){
       if(page_user[x] == run_pid){
 	 page_user[x] = NONE;
       }
@@ -292,7 +292,6 @@ void ExitSR(int exit_code) {
 }
 
 void ExecSR(int code_addr, int arg) {
-   int * p;
    int i, code_page, stack_page;
    char * code_space_addr;
    char * stack_space_addr;
@@ -328,19 +327,13 @@ void ExecSR(int code_addr, int arg) {
    Bzero(stack_space_addr, PAGE_SIZE); 
 
    //From the top of the stack page, copy 'arg' there
-   p = (int *)stack_space_addr + PAGE_SIZE;
-   p--;
-   *p = arg;
+   stack_space_addr = (int *)stack_space_addr + PAGE_SIZE;
+   stack_space_addr--;
+   *stack_space_addr = arg;
 
    //Skip a whole 4 bytes (return address, size of an integer)
-   //stack_space_addr = stack_space_addr + PAGE_SIZE - 1; 
+   stack_space_addr--;
 
-   //Lower the trapframe address in the PCB of run_pid by the size of two integers
-   //(int *)pcb[run_pid].trapframe_p = (int *)pcb[run_pid].trapframe_p - sizeof(int[2]);
-   p--;
-   //*p = 0;
-
-   //In html file, tells you to do this
    pcb[run_pid].trapframe_p = (trapframe_t *)p;
 
    //Decrement the trapframe pointer by 1 (one whole trapframe)
@@ -373,11 +366,12 @@ void WrapperSR(int pid, int handler_p, int arg) {
    //'arg' (2nd arg to Wrapper)
    //'handler' (1st arg to Wrapper)
    //'eip' in the original trapframe (UserProc resumes)
-   *p = pcb[pid].trapframe_p->eip;
    p--;
    *p = arg;
    p--;
    *p = handler_p;
+   p--;
+   *p = pcb[pid].trapframe_p->eip
 
    //Change eip in the trapframe to Wrapper to run it 1st
    pcb[pid].trapframe_p->eip = (int)Wrapper;
