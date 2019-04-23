@@ -157,8 +157,10 @@ void Kernel(trapframe_t *trapframe_p) { 	//where prototype?   // kernel runs
          breakpoint();                  	// AS | let's go to GDB
       }
       if(ch == 'n') { 				// AS | it's 'n':   // 'n' for new process
-	      NewProcSR(UserProc);      		// create a UserProc
-         rand = sys_centi_sec;
+	 NewProcSR(UserProc);      		// create a UserProc
+         if(rand == 0){
+	    rand = sys_centi_sec;
+	 }
      }
    }
    Scheduler();					// AS | call Scheduler()  // may need to pick another proc

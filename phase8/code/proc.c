@@ -73,8 +73,8 @@ void Aout(int device) {
    WriteCall(device, str);
 
    //slide alphabet accross the screen
-   for(i = 0; i < 70; i++){
-      PauseCall();
+   PauseCall();
+   for(i = 0; i < 70; i++){   
       ShowCharCall(my_pid, i, str[4]);
       rand = RandCall() % 20 + 5;
       SleepCall(rand);
@@ -93,7 +93,7 @@ void UserProc(void) {
    char str1[STR_SIZE] = "PID    > ";         // <-------------------- new
    char str2[STR_SIZE];                       // <-------------------- new
    char child_pid_string[STR_SIZE] = "Child PID=    ";
-   char child_exit_code[STR_SIZE] = "Child Exit Code=    ";
+   char child_exit_code[STR_SIZE] = "Child Exit Code=     ";
    char child_arrives[STR_SIZE] = "X  ARRIVES!!!";
 
    str1[4] = '0' + my_pid / 10;  // show my PID
@@ -132,17 +132,19 @@ void UserProc(void) {
          WriteCall(device, "\n\r");
       }
 
-      SleepCall(3000);
+      SleepCall(300);
       KillCall(0, SIGGO);
 
       for(i=0; i<5; i++) {
          return_code = WaitCall();
          Itoa(&child_exit_code[17], return_code);
          WriteCall(device, child_exit_code); 
-         WriteCall(device, "\n\r");
+         
+	 WriteCall(device, " ");
          
          child_arrives[0] = return_code / 100 + 'A';
          WriteCall(device, child_arrives);
+	 WriteCall(device, "\n\r");
       }
    }
 }

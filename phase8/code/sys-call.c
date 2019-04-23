@@ -197,9 +197,9 @@ void PauseCall(void) {
 }
 
 void KillCall(int pid, int sig_num) {
-   asm("mov $0, %%eax;
-        mov $1, %%ebx;
-        int $2"
+   asm("mov %0, %%eax;
+        mov %1, %%ebx;
+        int %2"
         :
         : "g" (pid), "g" (sig_num), "g" (KILL_CALL)
         : "eax", "ebx"
@@ -209,8 +209,8 @@ void KillCall(int pid, int sig_num) {
 unsigned RandCall(void) {
    unsigned rand;
 
-   asm("int $1;
-        mov %%eax, $0"
+   asm("int %1;
+        mov %%eax, %0"
         : "=g" (rand)
         : "g" (RAND_CALL)
         : "eax"
