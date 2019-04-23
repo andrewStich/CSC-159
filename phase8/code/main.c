@@ -22,7 +22,7 @@ term_t term[TERM_SIZE] = {
       { TRUE, TERM1_IO_BASE}
 };
 int page_user[PAGE_NUM];
-unsigned int rand = 0;
+unsigned rand = 0;
 
 void InitKernelData(void) { 			// wheres prototype   // init kernel data
    int i;      
@@ -158,7 +158,7 @@ void Kernel(trapframe_t *trapframe_p) { 	//where prototype?   // kernel runs
       }
       if(ch == 'n') { 				// AS | it's 'n':   // 'n' for new process
 	      NewProcSR(UserProc);      		// create a UserProc
-         rand = sys_centi_second;
+         rand = sys_centi_sec;
      }
    }
    Scheduler();					// AS | call Scheduler()  // may need to pick another proc

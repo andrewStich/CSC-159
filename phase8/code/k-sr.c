@@ -293,8 +293,8 @@ void ExitSR(int exit_code) {
 
 void ExecSR(int code_addr, int arg) {
    int i, code_page, stack_page;
-   char * code_space_addr;
-   char * stack_space_addr;
+   int * code_space_addr;
+   int * stack_space_addr;
    code_page = NONE;
    stack_page = NONE;
 
@@ -316,18 +316,18 @@ void ExecSR(int code_addr, int arg) {
          }
       }
    }
-   code_space_addr = (char *)((code_page * PAGE_SIZE) + RAM);
-   stack_space_addr = (char *)((stack_page * PAGE_SIZE) + RAM); 
+   code_space_addr = (int*)((code_page * PAGE_SIZE) + RAM);
+   stack_space_addr = (int*)((stack_page * PAGE_SIZE) + RAM); 
 
-   MemCpy(code_space_addr, (char *)code_addr, PAGE_SIZE);
-   Bzero(stack_space_addr, PAGE_SIZE); 
+   MemCpy((char*)code_space_addr, (char *)code_addr, PAGE_SIZE);
+   Bzero((char *)stack_space_addr, PAGE_SIZE); 
 
-   stack_space_addr = (int *)stack_space_addr + PAGE_SIZE;
+   stack_space_addr = (int*)((int)stack_space_addr + PAGE_SIZE);
    stack_space_addr--;
    *stack_space_addr = arg;
    stack_space_addr--;
 
-   pcb[run_pid].trapframe_p = (trapframe_t *)p;
+   pcb[run_pid].trapframe_p = (trapframe_t *)stack_space_addr;
    pcb[run_pid].trapframe_p--;
    pcb[run_pid].trapframe_p->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
    pcb[run_pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
@@ -352,7 +352,7 @@ void WrapperSR(int pid, int handler_p, int arg) {
    p--;
    *p = handler_p;
    p--;
-   *p = pcb[pid].trapframe_p->eip
+   *p = pcb[pid].trapframe_p->eip;
 
    pcb[pid].trapframe_p->eip = (int)Wrapper;
    

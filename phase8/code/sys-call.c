@@ -206,8 +206,8 @@ void KillCall(int pid, int sig_num) {
    );
 }
 
-int RandCall(void) {
-   int rand;
+unsigned RandCall(void) {
+   unsigned rand;
 
    asm("int $1;
         mov %%eax, $0"

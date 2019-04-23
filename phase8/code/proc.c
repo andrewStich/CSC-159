@@ -141,7 +141,7 @@ void UserProc(void) {
          WriteCall(device, child_exit_code); 
          WriteCall(device, "\n\r");
          
-         child_arrives[0] = child_exit_code / 100 + 'A'
+         child_arrives[0] = return_code / 100 + 'A';
          WriteCall(device, child_arrives);
       }
    }

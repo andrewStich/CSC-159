@@ -20,6 +20,6 @@ void ExecCall(int, int);
 void SignalCall(int, int);
 void PauseCall(void);
 void KillCall(int, int);
-int RandCall(void);
+unsigned RandCall(void);
 
 #endif
