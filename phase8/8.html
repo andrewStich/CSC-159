@@ -1,0 +1,103 @@
+<body bgcolor=white>
+<small><i>
+Sacramento State<br>
+Computer Engineering / Computer Science<br>
+CpE/CSc 159 Operating System Pragmatics (Spring 2019)<br>
+</i></small>
+<p>
+<center>
+<big><b>Phase 8 &nbsp; <i>Signal</i> IPC II: <i>Alpha Derby!</i></b></big></b>
+</center>
+
+<h3>The Goal</h3>
+In this phase, we can have a little fun of a video game called
+<i>Alpha Derby!</i>. Once <i>race</i> is entered from a terminal,
+the parent process (UserProc) will, in a loop, "fork" 5 child
+processes and each child will ExecCall with Aout like before.
+<p>
+The Aout code will issue a <b><i>void PauseCall(void)</b></i>
+to stop the process before it loops to show a character across
+the screen as the previous phase.
+<p>
+While all children have paused, the parent (UserProc), after
+the "fork" loop, will sleep for 3 seconds (to make sure all
+children have time to reach the pausing point. The parent
+continues to issue a <i>void KillCall(0, SIGGO)</i> which
+sends a signal to all paused children to start the race loop
+(to be released by the KillSR actually).
+<p>
+In the Aout race loop, the sleep time will be changed from
+the fixed 10 centi-seconds in the previous phase to a random
+period. This can be obtained by yet another new <i>unsigned
+RandCall(void)</i> which returns a (pseudo) random number
+ranging from 0 to 2G-1 (2147483647).
+The code applies this random number with modulus of 20, and
+plus 5, to make a random centi-seconds between 5 and 24 for
+sleeping time.
+<p>
+The parent (UserProc), after the KillCall, will loop again
+5 times to issue WaitCall() and show the child exiting (winning)
+sequence: convert the exit code to the proper alphabet of the
+child process (according to how the demo runs.)
+<p>
+
+<h3>Pause Service</h3>
+<li>
+A new <i>void PauseCall(void)</i> will link to <i>PauseSR</i>
+which will alter the state of the running process to a new
+state <i>PAUSE</i>, and have the <i>run_pid</i> reset.
+<p>
+<li>
+In a real OS, this is practiced as putting the process to sleep
+indefinitely until an event that wakes it up but we will do it
+in this simplified way without involving the sleep queue.
+<p>
+
+<h3>Kill Service</h3>
+<li>
+The kill service is actually to send a signal to other processes.
+The syscall <i>void KillCall(pid, signum)</i> when used with 0
+for the pid, then the signal signum is sent to all child processes.
+A <i>paused</i> process will resume upon any signum. Hence, here
+we will just use a generic name for the signal: <i>SIGGO</i>.
+<p>
+<li>
+The <i>KillSR</i> in the case of delivering a signal to all child
+processes, the PCB array is searched through for processes that has
+the parent PID equal to the calling process PID and is in the PAUSE
+state, to be released into the ready queue and have the state upgraded,
+in order to get to run again.
+<p>
+
+<h3>Rand Service</h3>
+<li>
+The <i>unsigned RandCall(void)</i> will return a random number ranging
+from 0 to 2G-1 (2147483647). The simpliest pseudo number X can be
+obtained by X = (aX + b) % m where a, b, and m are large numbers.
+<p>
+<li>
+The X is recursively used to generate the next X. Hence, the initial
+X is called the seed of the random number. In order to have various
+seeds, we can use the system time (sys_centi_sec) when the 1st 'n'
+key is pressed to seed the X. Further we can use the running PID
+as the multiplier of X (aX). For b, we can choose a prime number
+number such as 6700417.
+<p>
+<li>
+The random is calculated by <i>unsigned RandSR</i> and returned via trapframe.
+<p>
+
+<h3>Deliverables</h3>
+<blockquote>
+As before, submit only source-code files (*.c, *.h, and k-entry.S) to your
+team dropbox on host Voyager, in the designated phase folder.
+</blockquote>
+
+<h3>Review Questions</h3>
+<li>
+Where are the places in an OS design that matter the fairness of game plays?
+<p>
+<li>
+In particular, what places are difficult to be fair? Or, can they ever be
+fair at all? 
+<p>
