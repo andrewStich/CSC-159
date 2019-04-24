@@ -22,6 +22,7 @@ typedef struct {
    trapframe_t *trapframe_p;
    int ppid;
    int sigint_handler;
+   int main_table;
 } pcb_t;                     
 
 typedef struct {	             // generic queue type

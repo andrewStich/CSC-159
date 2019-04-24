@@ -34,6 +34,7 @@ void NewProcSR(func_p_t p) {  // arg: where process code starts
    pcb[pid].trapframe_p->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
    pcb[pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
    pcb[pid].trapframe_p->eip = (unsigned int)p;                	         // set to code
+   pcb[pid].main_table = kernel_main_table;
 }
 
 void CheckWakeProc(void){
@@ -251,11 +252,14 @@ int WaitSR(void) {
       run_pid = NONE;
       return NONE;
    }
-
+   
+   set_cr3(pcb[i].main_table);
    exit_code = pcb[i].trapframe_p->eax;
 
    pcb[i].state = UNUSED;
    EnQ(i, &pid_q);
+
+   set_cr3(pcb[run_pid].main_table);
 
    for(x = 0; x < PAGE_NUM; x++){
       if(page_user[x] == i){
