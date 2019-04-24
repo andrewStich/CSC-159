@@ -69,4 +69,13 @@
 #define A_PRIME 6700417
 #define G2 2147483647
 
+// Phase9 Constants
+#define PAGE_NUM 100
+#define M256 0x10000000
+#define G1_1 0x3fffffff
+#define V_TF (G1_1 - sizeof(int[2]) - sizeof(trapframe_t) +1)
+#define MASK10 0x003ff000
+#define PRESENT 0x1
+#define RW 0x2
+
 #endif
