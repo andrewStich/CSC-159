@@ -23,12 +23,13 @@ term_t term[TERM_SIZE] = {
 };
 int page_user[PAGE_NUM];
 unsigned rand = 0;
+int kernel_main_table;
 
 void InitKernelData(void) { 			// wheres prototype   // init kernel data
    int i;      
    intr_table = get_idt_base();     		// get intr table location +++++++
    sys_centi_sec = 0;
-   
+   kernel_main_table = get_cr3();
 
 
    Bzero((char*)&pid_q, sizeof(q_t));      	// clear 2 queues ++++++
@@ -88,6 +89,7 @@ int main(void) {                          	// OS bootstraps
 
    NewProcSR(InitProc); 		 	// create InitProc
    Scheduler();
+   set_cr3(pcb[run_pid].main_table);
    Loader(pcb[run_pid].trapframe_p); 		// load/run it
 
    return 0; 					// statement never reached, compiler asks it for syntax
@@ -164,6 +166,7 @@ void Kernel(trapframe_t *trapframe_p) { 	//where prototype?   // kernel runs
      }
    }
    Scheduler();					// AS | call Scheduler()  // may need to pick another proc
+   set_cr3(pcb[run_pid].main_table);
    Loader(pcb[run_pid].trapframe_p);
 }
 
