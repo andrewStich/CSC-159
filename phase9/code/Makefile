@@ -331,7 +331,7 @@ $(MY_DLI) :	$(OBJECTS) Makefile
 #  Dependencies.
 #### YQYQYQ-MARK-2 ####
 #
-#  Dependencies generated Mon Apr 22 16:29:29 PDT 2019 by (spede-mkmf $Revision: 1.2 $/1)
+#  Dependencies generated Tue Apr 30 16:17:40 PDT 2019 by (spede-mkmf $Revision: 1.2 $/1)
 #
 
 k-entry.o: k-entry.S k-const.h \

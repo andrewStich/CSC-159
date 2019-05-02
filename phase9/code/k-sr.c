@@ -207,13 +207,12 @@ int ForkSR(void) {
    int mem_diff;
    int *p;
    if(QisEmpty(&pid_q)) {
-      cons_printf("Panic: no more process!\n");
+      cons_printf("Panic: No more process!\n");
       return NONE;
    }
 
    childPID = DeQ(&pid_q);
    Bzero((char*)&pcb[childPID], sizeof(pcb_t));                 // clear PCB
-   //Bzero((char*)&proc_stack[childPID][0], PROC_STACK_SIZE);     // clear stack
    pcb[childPID].state = READY;
    pcb[childPID].ppid = run_pid;
    EnQ(childPID, &ready_q);
@@ -235,6 +234,7 @@ int ForkSR(void) {
       p = (int *)*p;
    }
 
+   pcb[childPID].main_table = kernel_main_table;
    return childPID;
 }
 
@@ -255,6 +255,7 @@ int WaitSR(void) {
    
    set_cr3(pcb[i].main_table);
    exit_code = pcb[i].trapframe_p->eax;
+   
 
    pcb[i].state = UNUSED;
    EnQ(i, &pid_q);
@@ -266,7 +267,6 @@ int WaitSR(void) {
 	 page_user[x] = NONE;
       }
    }
-
    return exit_code;
 }
 
@@ -282,60 +282,88 @@ void ExitSR(int exit_code) {
    pcb[pcb[run_pid].ppid].state = READY;
    EnQ(pcb[run_pid].ppid, &ready_q);
    pcb[pcb[run_pid].ppid].trapframe_p->eax = exit_code;
+   
+   set_cr3(kernel_main_table);
 
    pcb[run_pid].state = UNUSED;
    EnQ(run_pid, &pid_q);
-
+   
    for(x = 0; x < PAGE_NUM; x++){
       if(page_user[x] == run_pid){
 	 page_user[x] = NONE;
       }
    }
-
+   
    run_pid = NONE;
 }
 
 void ExecSR(int code_addr, int arg) {
-   int i, code_page, stack_page;
-   int * code_space_addr;
-   int * stack_space_addr;
-   code_page = NONE;
-   stack_page = NONE;
+   int i, j, pages[5], *p, entry;
+   trapframe_t *q;
+   enum {MAIN_TABLE, CODE_TABLE, STACK_TABLE, CODE_PAGE, STACK_PAGE};
 
-   // Allocate two DRAM pages, one for code, one for stack space
+   // Allocate 5 RAM Pages
+   j = 0;
    for(i = 0; i < PAGE_NUM; i++){
       if(page_user[i] == NONE) {
-         if(code_page == NONE) {
-            code_page = i;
-            continue;
-         }
-         else if(stack_page == NONE) {
-            stack_page = i;
-         }
-         
-         if(code_page != NONE && stack_page != NONE) {
-            page_user[code_page] = run_pid;
-            page_user[stack_page] = run_pid;
-            break;
-         }
+	 pages[j] = i;
+	 j++;
+	 page_user[i] = run_pid;
+      }
+      if(j == 5){
+	 break;
+      }
+      if(i == PAGE_NUM){
+	 cons_printf("Panic: no more DRAM pages!\n");
+	 breakpoint();
       }
    }
-   code_space_addr = (int*)((code_page * PAGE_SIZE) + RAM);
-   stack_space_addr = (int*)((stack_page * PAGE_SIZE) + RAM); 
+   pages[MAIN_TABLE] = (pages[MAIN_TABLE] * PAGE_SIZE) + RAM;
+   pages[CODE_TABLE] = (pages[CODE_TABLE] * PAGE_SIZE) + RAM;
+   pages[STACK_TABLE] = (pages[STACK_TABLE] * PAGE_SIZE) + RAM;
+   pages[CODE_PAGE] = (pages[CODE_PAGE] * PAGE_SIZE) + RAM;
+   pages[STACK_PAGE] = (pages[STACK_PAGE] * PAGE_SIZE) + RAM;
 
-   MemCpy((char*)code_space_addr, (char *)code_addr, PAGE_SIZE);
-   Bzero((char *)stack_space_addr, PAGE_SIZE); 
+   // Build CODE_PAGE
+   MemCpy((char*)pages[CODE_PAGE], (char *)code_addr, PAGE_SIZE);
 
-   stack_space_addr = (int*)((int)stack_space_addr + PAGE_SIZE);
-   stack_space_addr--;
-   *stack_space_addr = arg;
-   stack_space_addr--;
+   // Build STACK_PAGE
+   Bzero((char *)pages[STACK_PAGE], PAGE_SIZE); 
+   p = (int*)(pages[STACK_PAGE] + PAGE_SIZE);
+   p--;
+   *p = arg;
+   p--;
 
-   pcb[run_pid].trapframe_p = (trapframe_t *)stack_space_addr;
-   pcb[run_pid].trapframe_p--;
-   pcb[run_pid].trapframe_p->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
-   pcb[run_pid].trapframe_p->cs = get_cs();                 	 // dupl from CPU
-   pcb[run_pid].trapframe_p->eip = (unsigned int)code_space_addr;
+   q = (trapframe_t *)p;
+   q--;
+   q->efl = EF_DEFAULT_VALUE|EF_INTR; 	 // enables intr
+   q->cs = get_cs();                 	 // dupl from CPU
+   q->eip = (unsigned int)M256;
+
+
+   // Build addr-trans MAIN_TABLE
+   Bzero((char *)pages[MAIN_TABLE], PAGE_SIZE);
+   MemCpy((char *)pages[MAIN_TABLE], (char *)kernel_main_table, sizeof(int[4]));
+   entry = M256 >> 22;
+   *((int*)pages[MAIN_TABLE] + entry) = pages[CODE_TABLE] | PRESENT | RW;
+   entry = G1_1 >> 22;
+   *((int*)pages[MAIN_TABLE] + entry) = pages[STACK_TABLE] | PRESENT | RW;
+
+   // Build CODE_TABLE
+   Bzero((char *)pages[CODE_TABLE], PAGE_SIZE);
+   entry = (M256 & MASK10) >> 12;
+   *((int*)pages[CODE_TABLE] + entry) = pages[CODE_PAGE] | PRESENT | RW;
+
+   // Build STACK_TABLE
+   Bzero((char *)pages[STACK_TABLE], PAGE_SIZE);
+   entry = (G1_1 & MASK10) >> 12;  
+   *((int*)pages[STACK_TABLE] + entry) = pages[STACK_PAGE] | PRESENT | RW;
+
+   // Set the MAIN_TABLE in the PCB of the run_pid to the addr of the main table & 
+   // Set the trapframe_p in the PCB of run_pid to V_TF (using typecast)
+   pcb[run_pid].main_table = pages[MAIN_TABLE];
+   pcb[run_pid].trapframe_p = (trapframe_t *)V_TF;
+
 }
 
 void SignalSR(int sig_num, int handler_addr) {

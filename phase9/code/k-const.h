@@ -57,7 +57,7 @@
 #define EXEC_CALL 56
 #define SIGNAL_CALL 57
 #define SIGINT 3
-#define PAGE_NUM 20
+//#define PAGE_NUM 20
 #define PAGE_SIZE 4096
 #define RAM 0xe00000
 
